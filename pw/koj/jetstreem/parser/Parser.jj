@@ -1,0 +1,280 @@
+options {
+    STATIC = false;
+    DEBUG_PARSER = true;
+    UNICODE_INPUT = true;
+    JDK_VERSION = "1.8";
+}
+
+PARSER_BEGIN(Parser)
+package pw.koj.jetstreem.parser;
+import java.lang.reflect.*;
+import java.util.*;
+import java.io.*;
+
+public class Parser {
+    public static void main(String[] args) {
+        for(String arg: args) {
+            try {
+                parseFile(new File(arg));
+            }
+            catch(ParseException ex) {
+                System.out.println(ex.getMessage());
+            }
+            catch(FileNotFoundException ex) {
+                System.out.println(ex.getMessage());
+            }
+            catch(UnsupportedEncodingException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+    }
+
+    public static void parseFile(File file)
+        throws ParseException, FileNotFoundException, UnsupportedEncodingException {
+        newFileParser(file).program();
+    }
+
+    public static final String SOURCE_ENCODING = "UTF-8";
+
+    public static Parser newFileParser(File file)
+        throws FileNotFoundException, UnsupportedEncodingException {
+          BufferedReader rdr =
+              new BufferedReader(
+                  new InputStreamReader(new FileInputStream(file),
+                                        SOURCE_ENCODING));
+          return new Parser(rdr);
+   }
+}
+PARSER_END(Parser)
+
+
+/*
+ * Lexical Analysis
+ */
+
+// white spaces
+SPECIAL_TOKEN: { <SPACES: ([" ", "\t", "\r", "\f"])+> }
+
+// reserved word
+TOKEN: {
+      <IF       : "if" ([" ", "\t", "\n"])*>
+    | <ELSE     : ([" ", "\t", "\n"])* "else" ([" ", "\t", "\n"])*>
+    | <BREAK    : "break" ([" ", "\t", "\n"])*>
+    | <EMIT     : "emit" ([" ", "\t", "\n"])*>
+    | <RETURN   : "return" ([" ", "\t", "\n"])*>
+    | <NIL      : "nil" ([" ", "\t", "\n"])*>
+    | <TRUE     : "true" ([" ", "\t", "\n"])*>
+    | <FALSE    : "false" ([" ", "\t", "\n"])*>
+}
+
+// operators
+TOKEN: {
+      <OP_PLUS   : "+" ([" ", "\t", "\n"])*>
+    | <OP_MINUS  : "-" ([" ", "\t", "\n"])*>
+    | <OP_MULT   : "*" ([" ", "\t", "\n"])*>
+    | <OP_DIV    : "/" ([" ", "\t", "\n"])*>
+    | <OP_MOD    : "%" ([" ", "\t", "\n"])*>
+    | <OP_EQ     : "==" ([" ", "\t", "\n"])*>
+    | <OP_NEQ    : "!=" ([" ", "\t", "\n"])*>
+    | <OP_LT     : "<" ([" ", "\t", "\n"])*>
+    | <OP_LE     : "<=" ([" ", "\t", "\n"])*>
+    | <OP_GT     : ">" ([" ", "\t", "\n"])*>
+    | <OP_GE     : ">=" ([" ", "\t", "\n"])*>
+    | <OP_AND    : "&&" ([" ", "\t", "\n"])*>
+    | <OP_OR     : "||" ([" ", "\t", "\n"])*>
+    | <OP_BAR    : "|" ([" ", "\t", "\n"])*>
+    | <OP_AMPER  : "&" ([" ", "\t", "\n"])*>
+    | <OP_LASGN  : "<-" ([" ", "\t", "\n"])*>
+    | <OP_RASGN  : "->" ([" ", "\t", "\n"])*>
+}
+
+// miscs
+TOKEN: {
+      <DOT    : ([" ", "\t", "\n"])* "." ([" ", "\t", "\n"])*>
+    | <BEG_PAR : "(" ([" ", "\t", "\n"])*>
+    | <BEG_BRK : "[" ([" ", "\t", "\n"])*>
+    | <BEG_BRC : "{" ([" ", "\t", "\n"])*>
+    | <COMMA   : "," ([" ", "\t", "\n"])*>
+    | <SEM_CLN : ";" ([" ", "\t", "\n"])*>
+}
+
+// number Literal
+TOKEN: {
+    <LIT_NUMBER: (["1"-"9"] (["0"-"9"])* | "0") ("." (["0"-"9"])*)? >
+}
+
+// string Literal
+MORE: { <"\""> : INSIDE_STRING }
+<INSIDE_STRING> MORE: {
+      <(~["\"", "\\", "\n", "\r"])+>
+    | <"\\" ~[]>
+}
+<INSIDE_STRING> TOKEN: { <LIT_STRING: "\""> : DEFAULT }
+
+// identifier
+TOKEN: {
+    <IDENTIFIER: ["a"-"z", "A"-"Z", "_"] (["a"-"z", "A"-"Z", "0"-"9", "_"])*>
+}
+
+
+/*
+ * Syntactic Analysis
+ */
+
+void program(): {}
+{
+    compstmt() <EOF>
+        {
+            System.out.println("Syntax OK");
+        }
+}
+
+void compstmt(): {}
+{
+    [LOOKAHEAD(stmts()) stmts()] [terms()]
+}
+
+void terms(): {}
+{
+    (<SEM_CLN> | "\n") (<SEM_CLN> | "\n")*
+}
+
+void stmts(): {}
+{
+    stmt() (LOOKAHEAD(terms() stmt()) terms() stmt())*
+}
+
+void stmt(): {}
+{
+      <EMIT> [args()]
+    | <RETURN> [args()]
+    | <BREAK>
+    | LOOKAHEAD(2) var() "=" expr()
+    | LOOKAHEAD(2) var() <OP_LASGN> expr()
+    | LOOKAHEAD(expr() <OP_RASGN>)
+      expr() <OP_RASGN> var()
+    | expr()
+}
+
+void var(): {}
+{
+    <IDENTIFIER>
+}
+
+void expr(): {}
+{
+    expr1() (<OP_AMPER> expr1())*
+}
+
+void expr1(): {}
+{
+    expr2() (<OP_BAR> expr2())*
+}
+
+void expr2(): {}
+{
+    expr3() (<OP_OR> expr3())*
+}
+
+void expr3(): {}
+{
+    expr4() (<OP_AND> expr4())*
+}
+
+void expr4(): {}
+{
+    expr5() ( <OP_EQ> expr5()
+            | <OP_NEQ> expr5() )*
+}
+
+void expr5(): {}
+{
+    expr6() ( <OP_LT> expr6()
+            | <OP_LE> expr6()
+            | <OP_GT> expr6()
+            | <OP_GE> expr6() )*
+}
+
+void expr6(): {}
+{
+    expr7() ( <OP_PLUS> expr7()
+            | <OP_MINUS> expr7() )*
+}
+
+void expr7(): {}
+{
+    expr8() ( <OP_MULT> expr8()
+            | <OP_DIV> expr8()
+            | <OP_MOD> expr8() )*
+}
+
+void expr8(): {}
+{
+      <OP_PLUS> primary()
+    | <OP_MINUS> primary()
+    | "!" primary()
+    | "~" primary()
+    | primary()
+}
+
+void primary(): {}
+{
+      _primary() ( LOOKAHEAD(3) <DOT> <IDENTIFIER> <BEG_PAR> [args()] ")"
+                | <DOT> <IDENTIFIER> )*
+}
+
+void _primary(): {}
+{
+      <LIT_NUMBER>
+    | <LIT_STRING>
+    | <IF> expr() <BEG_BRC> compstmt() "}" [LOOKAHEAD(else_part()) else_part()]
+    | <BEG_PAR> compstmt() ")"
+    | LOOKAHEAD(<BEG_BRK> args()) <BEG_BRK> args() "]"
+    | LOOKAHEAD(<BEG_BRK> map_args()) <BEG_BRK> map_args() "]"
+    | LOOKAHEAD(2) <BEG_BRK> ":" "]"
+    | <BEG_BRK> "]"
+    | block()
+    | LOOKAHEAD(<IDENTIFIER> <BEG_PAR>)
+      <IDENTIFIER> <BEG_PAR> [args()] ")"
+    | <IDENTIFIER>
+}
+
+void else_part(): {}
+{
+      LOOKAHEAD(2) <ELSE> <IF> expr() <BEG_BRC> compstmt() "}"
+          [LOOKAHEAD(else_part()) else_part()]
+    | <ELSE> <BEG_BRC> compstmt() "}"
+}
+
+void args(): {}
+{
+    expr() (<COMMA> expr())*
+}
+
+void map_args(): {}
+{
+    map() (<COMMA> map())*
+}
+
+void map(): {}
+{
+    expr() ":" expr()
+}
+
+void block(): {}
+{
+    <BEG_BRC> bparam() compstmt() "}"
+}
+
+void bparam(): {}
+{
+      <OP_OR>
+    | LOOKAHEAD(2) <OP_BAR> <OP_BAR>
+    | <OP_BAR> f_args() <OP_BAR>
+}
+
+void f_args(): {}
+{
+    <IDENTIFIER> (<COMMA> <IDENTIFIER>)*
+}
+

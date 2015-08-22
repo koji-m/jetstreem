@@ -1,0 +1,4 @@
+#!/bin/sh
+
+java pw.koj.jetstreem.parser.Parser "$@"
+
