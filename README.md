@@ -1,6 +1,7 @@
 # JetStreem
 
 This is inspired by https://github.com/matz/streem
+(and by Takao Oosawa)
 
 YAPC Asia 2015 gave me motive.
 
