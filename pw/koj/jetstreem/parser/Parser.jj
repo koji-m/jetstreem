@@ -1,3 +1,9 @@
+/*
+ * JetStreem - Just an Experimetal Trial of Streem
+ *
+ * what's next: Linux magazine 2015/03
+ */
+
 options {
     STATIC = false;
     DEBUG_PARSER = true;
