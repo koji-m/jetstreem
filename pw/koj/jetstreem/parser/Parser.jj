@@ -156,9 +156,6 @@ void stmt(): {}
     | <RETURN> [args()]
     | <BREAK>
     | LOOKAHEAD(2) var() "=" expr()
-    | LOOKAHEAD(2) var() <OP_LASGN> expr()
-    | LOOKAHEAD(expr() <OP_RASGN>)
-      expr() <OP_RASGN> var()
     | expr()
 }
 
@@ -226,23 +223,101 @@ void expr8(): {}
 void primary(): {}
 {
       _primary() ( LOOKAHEAD(3) <DOT> <IDENTIFIER> <BEG_PAR> [args()] ")"
-                | <DOT> <IDENTIFIER> )*
+      [LOOKAHEAD(block()) block()]
+                | <DOT> <IDENTIFIER> [LOOKAHEAD(block()) block()])*
 }
 
 void _primary(): {}
 {
+    block()
+    | LOOKAHEAD(2)
+      <IDENTIFIER> <BEG_PAR> [args()] ")" [LOOKAHEAD(block()) block()]
+    | LOOKAHEAD(2) <IDENTIFIER> block()
+    | __primary()
+}
+
+void __primary(): {}
+{
       <LIT_NUMBER>
     | <LIT_STRING>
-    | <IF> expr() <BEG_BRC> compstmt() "}" [LOOKAHEAD(else_part()) else_part()]
-    | <BEG_PAR> compstmt() ")"
+    | <IDENTIFIER>
+    | <BEG_PAR> expr() ")"
     | LOOKAHEAD(<BEG_BRK> args()) <BEG_BRK> args() "]"
     | LOOKAHEAD(<BEG_BRK> map_args()) <BEG_BRK> map_args() "]"
     | LOOKAHEAD(2) <BEG_BRK> ":" "]"
     | <BEG_BRK> "]"
-    | block()
-    | LOOKAHEAD(<IDENTIFIER> <BEG_PAR>)
-      <IDENTIFIER> <BEG_PAR> [args()] ")"
-    | <IDENTIFIER>
+    | <IF> condition() <BEG_BRC> compstmt() "}" [LOOKAHEAD(else_part()) else_part()]
+    | <NIL>
+    | <TRUE>
+    | <FALSE>
+}
+
+void condition(): {}
+{
+    condition1() (<OP_AMPER> condition1())*
+}
+
+void condition1(): {}
+{
+    condition2() (<OP_BAR> condition2())*
+}
+
+void condition2(): {}
+{
+    condition3() (<OP_OR> condition3())*
+}
+
+void condition3(): {}
+{
+    condition4() (<OP_AND> condition4())*
+}
+
+void condition4(): {}
+{
+    condition5() ( <OP_EQ> condition5()
+            | <OP_NEQ> condition5() )*
+}
+
+void condition5(): {}
+{
+    condition6() ( <OP_LT> condition6()
+            | <OP_LE> condition6()
+            | <OP_GT> condition6()
+            | <OP_GE> condition6() )*
+}
+
+void condition6(): {}
+{
+    condition7() ( <OP_PLUS> condition7()
+            | <OP_MINUS> condition7() )*
+}
+
+void condition7(): {}
+{
+    condition8() ( <OP_MULT> condition8()
+            | <OP_DIV> condition8()
+            | <OP_MOD> condition8() )*
+}
+
+void condition8(): {}
+{
+      <OP_PLUS> cond()
+    | <OP_MINUS> cond()
+    | "!" cond()
+    | "~" cond()
+    | cond()
+}
+
+void cond(): {}
+{
+      _cond() ( LOOKAHEAD(3) <DOT> <IDENTIFIER> <BEG_PAR> [args()] ")" 
+                | <DOT> <IDENTIFIER> )*
+}
+
+void _cond(): {}
+{
+      LOOKAHEAD(2) <IDENTIFIER> <BEG_PAR> [args()] ")"
+    | __primary()
 }
 
 void else_part(): {}

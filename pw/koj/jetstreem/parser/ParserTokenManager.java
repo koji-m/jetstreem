@@ -43,13 +43,13 @@ private int jjMoveStringLiteralDfa0_0()
       case 41:
          return jjStopAtPos(0, 43);
       case 58:
-         return jjStopAtPos(0, 46);
+         return jjStopAtPos(0, 45);
       case 61:
          return jjStartNfaWithStates_0(0, 40, 42);
       case 93:
-         return jjStopAtPos(0, 45);
-      case 125:
          return jjStopAtPos(0, 44);
+      case 125:
+         return jjStopAtPos(0, 46);
       case 126:
          return jjStopAtPos(0, 42);
       default :
@@ -1059,7 +1059,7 @@ public static final String[] jjstrLiteralImages = {
 "", null, null, null, null, null, null, null, null, null, null, null, null, 
 null, null, null, null, null, null, null, null, null, null, null, null, null, null, 
 null, null, null, null, null, null, null, null, null, null, null, null, "\12", 
-"\75", "\41", "\176", "\51", "\175", "\135", "\72", };
+"\75", "\41", "\176", "\51", "\135", "\72", "\175", };
 
 /** Lexer state names. */
 public static final String[] lexStateNames = {
