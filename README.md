@@ -8,7 +8,7 @@ YAPC Asia 2015 gave me motive.
 ## Sample Code of Streem lang
 
 ```
-seq(100) | {|x|
+seq(100) | {x ->
   if x % 15 == 0 {
     "FizzBuzz"
   }
