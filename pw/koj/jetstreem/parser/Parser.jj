@@ -269,14 +269,14 @@ void map(): {}
 
 void block(): {}
 {
-    <BEG_BRC> bparam() compstmt() "}"
+      LOOKAHEAD(<BEG_BRC> bparam()) <BEG_BRC> bparam() compstmt() "}"
+    | <BEG_BRC> compstmt() "}"
 }
 
 void bparam(): {}
 {
-      <OP_OR>
-    | LOOKAHEAD(2) <OP_BAR> <OP_BAR>
-    | <OP_BAR> f_args() <OP_BAR>
+      <OP_RASGN>
+    | f_args() <OP_RASGN>
 }
 
 void f_args(): {}
