@@ -22,5 +22,9 @@ public final class StrmQueue extends LinkedBlockingQueue {
         entry.perform();
     }
 
+    public boolean queueP() {
+        return this.size() > 0;
+    }
+
 }
 
