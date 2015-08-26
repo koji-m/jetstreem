@@ -1,4 +1,4 @@
-package pw.koj.jetstree.core;
+package pw.koj.jetstreem.core;
 
 public class StrmQueueEntry {
     private Streem strm;
