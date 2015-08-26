@@ -15,5 +15,12 @@ public final class StrmQueue extends LinkedBlockingQueue {
         }
         return instance;
     }
+
+    public void queueExec() {
+        StrmQueueEntry entry = (StrmQueueEntry)this.poll();
+
+        entry.perform();
+    }
+
 }
 
