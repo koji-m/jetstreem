@@ -12,6 +12,10 @@ public class StrmQueueEntry {
         this.data = data;
         this.next = null;
     }
+
+    public void perform() {
+        this.func.call(this.strm, this.data);
+    }
 }
 
 
