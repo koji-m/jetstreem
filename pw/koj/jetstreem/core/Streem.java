@@ -53,5 +53,21 @@ public class Streem {
         return this.nextd;
     }
 
+    public void emit(Void data, StrmFunc func) {
+        Streem d = this.dst;
+
+        while (d != null) {
+            taskPush(d, d.startFunc(), data);
+            d = d.nextd();
+        }
+        if (func != null) {
+            taskPush(this, func, null);
+        }
+    }
+
+    private void taskPush(Streem strm, StrmFunc func, Void data) {
+        this.queue.push(strm, func, data);
+    }
+
 }
 
