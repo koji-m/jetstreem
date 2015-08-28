@@ -20,5 +20,38 @@ public class Streem {
         this.nextd = null;
         this.flags = 0;
     }
+
+    public TaskMode mode() {
+        return this.mode;
+    }
+
+    public StrmQueue queue() {
+        return this.queue;
+    }
+
+    public char flags() {
+        return this.flags;
+    }
+
+    public StrmFunc startFunc() {
+        return this.startFunc;
+    }
+
+    public StrmFunc closeFunc() {
+        return this.closeFunc;
+    }
+
+    public Void data() {
+        return this.data;
+    }
+
+    public Streem dst() {
+        return this.dst;
+    }
+
+    public Streem nextd() {
+        return this.nextd;
+    }
+
 }
 
