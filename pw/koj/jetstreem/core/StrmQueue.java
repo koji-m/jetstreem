@@ -2,7 +2,7 @@ package pw.koj.jetstreem.core;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public final class StrmQueue extends LinkedBlockingQueue {
+public final class StrmQueue extends LinkedBlockingQueue<StrmQueueEntry> {
     private static StrmQueue instance;
 
     private StrmQueue() {
@@ -17,9 +17,14 @@ public final class StrmQueue extends LinkedBlockingQueue {
     }
 
     public void queueExec() {
-        StrmQueueEntry entry = (StrmQueueEntry)this.poll();
+        StrmQueueEntry entry = this.poll();
 
         entry.perform();
+    }
+
+    public void push(Streem strm, StrmFunc func, Void data) {
+        StrmQueueEntry entry = new StrmQueueEntry(strm, func, data);
+        this.offer(entry);
     }
 
     public boolean queueP() {
