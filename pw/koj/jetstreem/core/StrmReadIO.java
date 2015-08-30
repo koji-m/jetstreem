@@ -1,12 +1,11 @@
 package pw.koj.jetstreem.core;
-import java.nio.ByteBuffer;
 
 public class StrmReadIO extends Streem {
-    private ByteBuffer buf;
+    private ChannelReadBuffer crbuf;
 
-    public StrmReadIO(StrmQueue queue, ByteBuffer buf) {
+    public StrmReadIO(StrmQueue queue, ChannelReadBuffer crbuf) {
         super(TaskMode.PROD, queue, StrmReadIO::stdioRead, StrmReadIO::readClose, null);
-        this.buf = buf;
+        this.crbuf = crbuf;
     }
 
     private static void stdioRead(Streem strm, Void data) {
