@@ -3,6 +3,7 @@ package pw.koj.jetstreem.core;
 import java.nio.channels.Selector;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectableChannel;
 import java.io.IOException;
 import java.util.*;
 
@@ -59,13 +60,13 @@ public class StrmIOLoop extends Thread {
     }
 
     public void ioStartRead(Streem strm, SelectableChannel ch, StrmFunc cb) {
-        ioStart(strm, ch, cb, SelectionKey.IO_READ);
+        ioStart(strm, ch, cb, SelectionKey.OP_READ);
     }
 
     public void run() {
         try {
             while (this.selector.select() > 0) {
-                Set keys = this.selector.selectedKeys();
+                Set<SelectionKey> keys = this.selector.selectedKeys();
                 for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext(); ) {
                     SelectionKey key = it.next();
                     it.remove();
