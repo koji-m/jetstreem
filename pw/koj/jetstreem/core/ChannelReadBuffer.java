@@ -12,5 +12,13 @@ public class ChannelReadBuffer {
         this.ch = ch;
         this.buf = ByteBuffer.allocateDirect(BUF_SIZE);
     }
+
+    public SelectableChannel ch() {
+        return this.ch;
+    }
+
+    public ByteBuffer buf() {
+        return this.buf;
+    }
 }
 
