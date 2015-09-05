@@ -71,6 +71,7 @@ public class StrmIOLoop extends Thread {
                     SelectionKey key = it.next();
                     it.remove();
                     StrmIOTask task = (StrmIOTask)key.attachment();
+                    key.cancel();  // one shot
                     taskQueue.push(task.strm(), task.func(), null);
                 }
             }
