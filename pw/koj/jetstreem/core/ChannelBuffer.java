@@ -38,5 +38,17 @@ public class ChannelBuffer {
         return this.buf.clear();
     }
 
+    public void bufMove(int to, int from, int len) {
+        int toIndex = to;
+        int fromIndex = from;
+
+        for (int i = len; i > 0; i--, toIndex++, fromIndex++) {
+            this.buf.put(toIndex, this.buf.get(fromIndex));
+        }
+
+        this.buf.position(0);
+        this.buf.limit(len - 1);
+    }
+
 }
 
