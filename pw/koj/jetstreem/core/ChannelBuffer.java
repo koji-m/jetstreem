@@ -22,6 +22,10 @@ public class ChannelBuffer {
         return this.buf;
     }
 
+    public int position() {
+        return this.buf.position();
+    }
+
     public boolean hasRemaining() {
         return this.buf.hasRemaining();
     }
@@ -47,7 +51,7 @@ public class ChannelBuffer {
         }
 
         this.buf.position(0);
-        this.buf.limit(len - 1);
+        this.buf.limit(len);
     }
 
 }

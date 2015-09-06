@@ -3,6 +3,7 @@ package pw.koj.jetstreem.core;
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.ClosedChannelException;
 import java.nio.ByteBuffer;
 
 
@@ -44,10 +45,10 @@ public class StrmReadIO extends Streem {
             if (n <= 0) {
                 StrmIOLoop loop = ioStrm.ioLoop();
                 if (crbuf.hasRemaining()) {
-                    byte[] buf = new byte[crbuf.remaining()];
-                    crbuf.get(buf);
+                    char[] chArr = new char[crbuf.remaining()];
+                    crbuf.getChar(chArr);
                     crbuf.clear();
-                    ioStrm.emit(buf, null);
+                    ioStrm.emit(chArr, null);
                     loop.ioPush(crbuf, ioStrm, StrmReadIO::readCb, SelectionKey.OP_READ);
                 }
                 else {
@@ -59,12 +60,33 @@ public class StrmReadIO extends Streem {
             System.err.println("I/O error: " + ex.getMessage());
         }
 
-            readLineCb(ioStrm, null);
+        readLineCb(ioStrm, null);
     }
 
     public static void readLineCb(Streem strm, Object data) {
-        // TBD
+        StrmReadIO ioStrm = (StrmReadIO)strm;
+        ChannelReadBuffer crbuf = ioStrm.crbuf();
+
+        char[] chArr = crbuf.subCharSequence('\n');
+        if (chArr == null) {
+            int len = crbuf.remaining();
+            crbuf.bufMove(0, crbuf.position(), len);
+
+            try {
+                StrmIOLoop loop = ioStrm.ioLoop();
+                loop.ioPush(crbuf, ioStrm, StrmReadIO::readCb, SelectionKey.OP_READ);
+            } catch (ClosedChannelException ex) {
+                System.err.println("Channel error: " + ex.getMessage());
+            } catch (IOException ex) {
+                System.err.println("I/O error: " + ex.getMessage());
+            }
+
+            return;
+        }
+        
+        ioStrm.emit(chArr, StrmReadIO::readLineCb);
     }
+
 
     // close function
     private static void readClose(Streem strm, Object data) {
