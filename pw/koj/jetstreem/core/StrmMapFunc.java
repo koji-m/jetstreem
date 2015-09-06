@@ -1,6 +1,6 @@
 package pw.koj.jetstreem.core;
 
 public interface StrmMapFunc {
-    public abstract Void call(Streem strm, Void data);
+    public abstract Object call(Streem strm, Object data);
 }
 

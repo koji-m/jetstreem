@@ -10,7 +10,6 @@ import java.util.*;
 public class StrmIOLoop extends Thread {
     private Selector selector;
     private StrmQueue taskQueue;
-    private int ioWaitNum;
 
     private StrmIOLoop () {
         super();
@@ -20,7 +19,6 @@ public class StrmIOLoop extends Thread {
             System.err.println("I/O error: " + ex.getMessage());
         }
         this.taskQueue = StrmQueue.getInstance();
-        this.ioWaitNum = 0;
     }
 
     public static StrmIOLoop initIOLoop() {
@@ -40,27 +38,28 @@ public class StrmIOLoop extends Thread {
         return this.taskQueue;
     }
 
-    public int ioWaitNum() {
-        return this.ioWaitNum;
-    }
-
-    public void ioPush(SelectableChannel ch, Streem strm, StrmFunc cb, int key) 
-        throws ClosedChannelException {
+    public void ioPush(ChannelBuffer cbuf, Streem strm, StrmFunc cb, int key) 
+        throws ClosedChannelException, IOException {
         StrmIOTask task = new StrmIOTask(strm, cb);
+        SelectableChannel ch = (SelectableChannel)cbuf.ch();
+        ch.configureBlocking(false);
         ch.register(this.selector, key, task);
     }
 
-    public void ioStart(Streem strm, SelectableChannel ch, StrmFunc cb, int key) {
+    public void ioStart(Streem strm, ChannelBuffer cbuf, StrmFunc cb, int key) {
         try {
-            ioPush(ch, strm, cb, key);
-            this.ioWaitNum++;
+            ioPush(cbuf, strm, cb, key);
         } catch (ClosedChannelException ex) {
             System.err.println("Channel error: " + ex.getMessage());
+        } catch (IOException ex) {
+            System.err.println("I/O error: " + ex.getMessage());
         }
     }
 
-    public void ioStartRead(Streem strm, SelectableChannel ch, StrmFunc cb) {
-        ioStart(strm, ch, cb, SelectionKey.OP_READ);
+    public void ioStop(Streem strm, ChannelBuffer cbuf) {
+        SelectableChannel ch = (SelectableChannel)cbuf.ch();
+        SelectionKey key = ch.keyFor(this.selector);
+        key.cancel();
     }
 
     public void run() {

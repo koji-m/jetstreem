@@ -12,11 +12,11 @@ public class StrmFuncMap extends Streem {
         return this.mapFunc;
     }
 
-    private static void mapRecv(Streem strm, Void data) {
+    private static void mapRecv(Streem strm, Object data) {
         StrmFuncMap fmap = (StrmFuncMap)strm;
         StrmMapFunc func = fmap.mapFunc();
         
-        Void d = func.call(strm, data);
+        Object d = func.call(strm, data);
         strm.emit(d, null);
     }
 }

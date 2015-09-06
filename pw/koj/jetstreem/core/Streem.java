@@ -6,11 +6,11 @@ public class Streem {
     private char flags;
     private StrmFunc startFunc;
     private StrmFunc closeFunc;
-    private Void data;
+    private Object data;
     private Streem dst;
     private Streem nextd;
 
-    public Streem(TaskMode mode, StrmQueue queue, StrmFunc startFunc, StrmFunc closeFunc, Void data) {
+    public Streem(TaskMode mode, StrmQueue queue, StrmFunc startFunc, StrmFunc closeFunc, Object data) {
         this.mode = mode;
         this.queue = queue;
         this.startFunc = startFunc;
@@ -41,7 +41,7 @@ public class Streem {
         return this.closeFunc;
     }
 
-    public Void data() {
+    public Object data() {
         return this.data;
     }
 
@@ -53,7 +53,7 @@ public class Streem {
         return this.nextd;
     }
 
-    public void emit(Void data, StrmFunc func) {
+    public void emit(Object data, StrmFunc func) {
         Streem d = this.dst;
 
         while (d != null) {
@@ -65,7 +65,7 @@ public class Streem {
         }
     }
 
-    private void taskPush(Streem strm, StrmFunc func, Void data) {
+    private void taskPush(Streem strm, StrmFunc func, Object data) {
         this.queue.push(strm, func, data);
     }
 

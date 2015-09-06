@@ -22,7 +22,7 @@ public final class StrmQueue extends LinkedBlockingQueue<StrmQueueEntry> {
         entry.perform();
     }
 
-    public void push(Streem strm, StrmFunc func, Void data) {
+    public void push(Streem strm, StrmFunc func, Object data) {
         StrmQueueEntry entry = new StrmQueueEntry(strm, func, data);
         this.offer(entry);
     }
