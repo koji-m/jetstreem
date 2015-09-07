@@ -31,8 +31,12 @@ public class StrmReadIO extends Streem {
     }
 
     private static void ioStartRead(StrmReadIO strm, StrmFunc cb) {
-       StrmIOLoop loop = strm.ioLoop();
-       loop.ioStart(strm, strm.crbuf(), cb, SelectionKey.OP_READ);
+        ChannelReadBuffer crbuf = strm.crbuf();
+        if (crbuf.hasInputPipe()) {
+            crbuf.startInputPipe();
+        }
+        StrmIOLoop loop = strm.ioLoop();
+        loop.ioStart(strm, strm.crbuf(), cb, SelectionKey.OP_READ);
     }
 
     public static void readCb(Streem strm, Object data) {
