@@ -7,8 +7,23 @@ import java.nio.channels.ReadableByteChannel;
 import java.io.IOException;
 
 public class ChannelReadBuffer extends ChannelBuffer {
+    private InputPipeThread inPipe;
+
     public ChannelReadBuffer(Channel ch) {
         super(ch);
+    }
+
+    public ChannelReadBuffer(Channel ch, InputPipeThread inPipe) {
+        super(ch);
+        this.inPipe = inPipe;
+    }
+
+    public boolean hasInputPipe() {
+        return this.inPipe != null;
+    }
+
+    public void startInputPipe() {
+        this.inPipe.start();
     }
 
     public int read() throws IOException {
