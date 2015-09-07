@@ -90,7 +90,12 @@ public class StrmReadIO extends Streem {
 
     // close function
     private static void readClose(Streem strm, Object data) {
-        // TBD
+        StrmReadIO ioStrm = (StrmReadIO)strm;
+        try {
+            ioStrm.crbuf().ch().close();
+        } catch (IOException ex) {
+            System.err.println("I/O error: " + ex.getMessage());
+        }
     }
 }
 

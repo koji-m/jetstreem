@@ -3,6 +3,7 @@ package pw.koj.jetstreem.core;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
+import java.io.IOException;
 
 public class ChannelBuffer {
     public static final int BUF_SIZE = 4096;
@@ -40,6 +41,10 @@ public class ChannelBuffer {
 
     public Buffer clear() {
         return this.buf.clear();
+    }
+
+    public void close() throws IOException {
+        this.ch.close();
     }
 
     public void bufMove(int to, int from, int len) {
