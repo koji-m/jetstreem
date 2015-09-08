@@ -1,35 +1,30 @@
 package pw.koj.jetstreem.core;
 
 import java.nio.channels.WritableByteChannel;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.PrintStream;
 
 public class StrmWriteIO extends Streem {
-    private DataOutputStream outStream;
+    private PrintStream outStream;
 
-    public StrmWriteIO(StrmQueue queue, DataOutputStream outStream) {
+    public StrmWriteIO(StrmQueue queue, PrintStream outStream) {
         super(TaskMode.CONS, queue, StrmWriteIO::writeCb, StrmWriteIO::writeClose, null);
         this.outStream = outStream;
     }
 
-    public DataOutputStream outStream() {
+    public PrintStream outStream() {
         return this.outStream;
     }
 
     public static void writeCb(Streem strm, Object data) {
         StrmWriteIO ioStrm = (StrmWriteIO)strm;
-        DataOutputStream out = ioStrm.outStream();
-        String str = (String)data;
+        PrintStream out = ioStrm.outStream();
 
-        try {
-            out.writeUTF(str);
-        } catch (IOException ex) {
-            System.err.println("I/O error: " + ex.getMessage());
-        }
+        out.print(data);
     }
 
     public static void writeClose(Streem strm, Object data) {
-        // TBD
+        StrmWriteIO s = (StrmWriteIO)strm;
+        s.outStream().close();
     }
 
 }
