@@ -49,8 +49,28 @@ public class Streem {
         return this.dst;
     }
 
+    public void dst(Streem dst) {
+        this.dst = dst;
+    }
+
     public Streem nextd() {
         return this.nextd;
+    }
+
+    public void nextd(Streem nextd) {
+        this.nextd = nextd;
+    }
+
+    public boolean hasDst() {
+        return this.dst != null;
+    }
+
+    public boolean hasNextD() {
+        return this.nextd != null;
+    }
+
+    public boolean isProducer() {
+        return this.mode == TaskMode.PROD;
     }
 
     public void emit(Object data, StrmFunc func) {
@@ -67,6 +87,28 @@ public class Streem {
 
     private void taskPush(Streem strm, StrmFunc func, Object data) {
         this.queue.push(strm, func, data);
+    }
+
+    public boolean connect(Streem dstStrm) {
+        if (dstStrm.isProducer()) {
+            return false;
+        }
+
+        Streem s = this.dst;
+        if (s.hasDst()) {
+            while (s.hasNextD()) {
+                s = s.nextd();
+            }
+            s.nextd(dstStrm);
+        }
+        else {
+            s.dst(dstStrm);
+        }
+
+        if (this.isProducer()) {
+            taskPush(this, this.startFunc, null);
+        }
+        return true;
     }
 
 }
