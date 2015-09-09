@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class StrmIOLoop extends Thread {
+    private static StrmIOLoop instance;
     private Selector selector;
     private StrmQueue taskQueue;
 
@@ -21,9 +22,11 @@ public class StrmIOLoop extends Thread {
         this.taskQueue = StrmQueue.getInstance();
     }
 
-    public static StrmIOLoop initIOLoop() {
-        StrmIOLoop loop = new StrmIOLoop();
-        return loop;
+    public static StrmIOLoop getInstance() {
+        if (instance == null) {
+           instance = new StrmIOLoop();
+        }
+        return instance;
     }
 
     public void closeIOLoop() {
@@ -36,6 +39,10 @@ public class StrmIOLoop extends Thread {
 
     public StrmQueue taskQueue() {
         return this.taskQueue;
+    }
+
+    public boolean hasNoRegistrant() {
+        return this.selector().keys().isEmpty();
     }
 
     public void ioPush(ChannelBuffer cbuf, Streem strm, StrmFunc cb, int key) 
