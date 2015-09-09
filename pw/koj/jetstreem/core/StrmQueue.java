@@ -27,8 +27,19 @@ public final class StrmQueue extends LinkedBlockingQueue<StrmQueueEntry> {
         this.offer(entry);
     }
 
-    public boolean queueP() {
+    public boolean hasRemaining() {
         return this.size() > 0;
+    }
+
+    public void loop() {
+        for(;;) {
+            queueExec();
+
+            StrmIOLoop ioLoop = StrmIOLoop.getInstance();
+            if (ioLoop.hasNoRegistrant() && !hasRemaining()) {
+                break;
+            }
+        }
     }
 
 }
