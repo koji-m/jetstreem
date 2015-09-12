@@ -50,8 +50,9 @@ public class StrmReadIO extends Streem {
                 StrmIOLoop loop = ioStrm.ioLoop();
                 if (crbuf.hasRemaining()) {
                     char[] chArr = new char[crbuf.remaining()];
-                    crbuf.getChar(chArr);
+                    crbuf.get(chArr);
                     crbuf.clear();
+                    crbuf.done(true);
                     ioStrm.emit(chArr, null);
                     loop.ioPush(crbuf, ioStrm, StrmReadIO::readCb, SelectionKey.OP_READ);
                 }
@@ -64,6 +65,7 @@ public class StrmReadIO extends Streem {
             System.err.println("I/O error: " + ex.getMessage());
         }
 
+        crbuf.flip();
         readLineCb(ioStrm, null);
     }
 
@@ -73,8 +75,7 @@ public class StrmReadIO extends Streem {
 
         char[] chArr = crbuf.subCharSequence('\n');
         if (chArr == null) {
-            int len = crbuf.remaining();
-            crbuf.bufMove(0, crbuf.position(), len);
+            crbuf.purge();
 
             try {
                 StrmIOLoop loop = ioStrm.ioLoop();
@@ -87,7 +88,6 @@ public class StrmReadIO extends Streem {
 
             return;
         }
-        
         ioStrm.emit(chArr, StrmReadIO::readLineCb);
     }
 

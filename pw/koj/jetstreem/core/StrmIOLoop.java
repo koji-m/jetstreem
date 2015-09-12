@@ -5,17 +5,24 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 public class StrmIOLoop extends Thread {
     private static StrmIOLoop instance;
     private Selector selector;
     private StrmQueue taskQueue;
+    private AtomicInteger waitNum;
+    private AtomicInteger registrantNum;
+    private boolean active;
 
     private StrmIOLoop () {
         super();
         try {
             this.selector = Selector.open();
+            this.waitNum = new AtomicInteger();
+            this.registrantNum = new AtomicInteger();
+            this.active = true;
         } catch (IOException ex) {
             System.err.println("I/O error: " + ex.getMessage());
         }
@@ -42,7 +49,11 @@ public class StrmIOLoop extends Thread {
     }
 
     public boolean hasNoRegistrant() {
-        return this.selector().keys().isEmpty();
+        return this.selector.keys().size() == 0;
+    }
+
+    public void terminate() {
+        this.active = false;
     }
 
     public void ioPush(ChannelBuffer cbuf, Streem strm, StrmFunc cb, int key) 
@@ -50,7 +61,14 @@ public class StrmIOLoop extends Thread {
         StrmIOTask task = new StrmIOTask(strm, cb);
         SelectableChannel ch = (SelectableChannel)cbuf.ch();
         ch.configureBlocking(false);
+        this.waitNum.incrementAndGet();
+        this.selector.wakeup();
         ch.register(this.selector, key, task);
+        this.registrantNum.incrementAndGet();
+        this.waitNum.decrementAndGet();
+        synchronized (this) {
+            this.notifyAll();
+        }
     }
 
     public void ioStart(Streem strm, ChannelBuffer cbuf, StrmFunc cb, int key) {
@@ -66,30 +84,46 @@ public class StrmIOLoop extends Thread {
     public void ioStop(Streem strm, ChannelBuffer cbuf) {
         SelectableChannel ch = (SelectableChannel)cbuf.ch();
         SelectionKey key = ch.keyFor(this.selector);
-        key.cancel();
+        if (key != null) {
+            key.cancel();
+        }
+        this.registrantNum.decrementAndGet();
     }
 
     public void run() {
         try {
-            while (this.selector.select() > 0) {
-                Set<SelectionKey> keys = this.selector.selectedKeys();
-                for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext(); ) {
-                    SelectionKey key = it.next();
-                    it.remove();
-                    StrmIOTask task = (StrmIOTask)key.attachment();
-                    key.cancel();  // one shot
-                    taskQueue.push(task.strm(), task.func(), null);
+            while (true) {
+                if (this.active) {
+                if (this.selector.select() > 0) {
+                    Set<SelectionKey> keys = this.selector.selectedKeys();
+                    for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext(); ) {
+                        SelectionKey key = it.next();
+                        it.remove();
+                        StrmIOTask task = (StrmIOTask)key.attachment();
+                        taskQueue.push(task.strm(), task.func(), null);
+                        key.cancel();  // one shot
+                    }
+                }} else {
+                    break;
+                }
+                while(this.waitNum.intValue() > 0) {
+                    synchronized (this) {
+                        this.wait();
+                    }
                 }
             }
         } catch (ClosedChannelException ex) {
             System.err.println("I/O channel is closed!");
         } catch (IOException ex) {
             System.err.println("I/O error: " + ex.getMessage());
+        } catch (InterruptedException ex) {
+            System.err.println("Interrupted: " + ex.getMessage());
         } finally {
             try {
                 for (SelectionKey key: this.selector.keys()) {
                     key.channel().close();
                 }
+                this.selector.close();
             } catch (IOException ex) {
                 System.err.println("I/O error: " + ex.getMessage());
             }

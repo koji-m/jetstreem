@@ -94,7 +94,7 @@ public class Streem {
             return false;
         }
 
-        Streem s = this.dst;
+        Streem s = this;
         if (s.hasDst()) {
             while (s.hasNextD()) {
                 s = s.nextd();

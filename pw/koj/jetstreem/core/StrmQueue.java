@@ -19,7 +19,9 @@ public final class StrmQueue extends LinkedBlockingQueue<StrmQueueEntry> {
     public void queueExec() {
         StrmQueueEntry entry = this.poll();
 
-        entry.perform();
+        if (entry != null) {
+            entry.perform();
+        }
     }
 
     public void push(Streem strm, StrmFunc func, Object data) {
@@ -34,9 +36,10 @@ public final class StrmQueue extends LinkedBlockingQueue<StrmQueueEntry> {
     public void loop() {
         for(;;) {
             queueExec();
-
             StrmIOLoop ioLoop = StrmIOLoop.getInstance();
             if (ioLoop.hasNoRegistrant() && !hasRemaining()) {
+                ioLoop.terminate();
+                ioLoop.interrupt();
                 break;
             }
         }
