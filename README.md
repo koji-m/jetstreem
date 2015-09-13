@@ -25,13 +25,29 @@ seq(100) | {x ->
 ```
 ## Installation
 
+To build parser,
 ```
 make
 ```
 
+To build core,
+```
+make core
+```
+core operates same as following code.
+```
+stdin | to_upper() | stdout
+```
+
 ## Usage
 
+To check syntax,
 ```
 ./jetstreem hoge.strm
+```
+
+To test core (operates described above),
+```
+cat some_text_file | java pw/koj/jetstreem/Main
 ```
 
