@@ -5,3 +5,5 @@ all: $(SRCDIR)parser/Parser.class
 $(SRCDIR)parser/Parser.class: $(SRCDIR)/parser/Parser.java
 	javac $(SRCDIR)parser/Parser.java
 
+core: 
+	javac $(SRCDIR)/core/Main.java
