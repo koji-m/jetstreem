@@ -40,7 +40,7 @@ public class ChannelReadBuffer extends ChannelBuffer {
     private char[] readAsChar() 
     throws IOException, UnsupportedEncodingException {
         this.readBuf.position(0);
-        this.readBuf.limit(this.buf.remaining() * 2);
+        this.readBuf.limit(this.buf.remaining());
         ReadableByteChannel ch = (ReadableByteChannel)this.ch;
         ch.read(this.readBuf);
         this.readBuf.flip();
