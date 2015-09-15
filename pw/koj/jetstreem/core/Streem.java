@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.core;
 
 public class Streem {
+    private int tid;
     private TaskMode mode;
     private StrmQueue queue;
     private char flags;
@@ -11,6 +12,7 @@ public class Streem {
     private Streem nextd;
 
     public Streem(TaskMode mode, StrmQueue queue, StrmFunc startFunc, StrmFunc closeFunc, Object data) {
+        this.tid = -1;
         this.mode = mode;
         this.queue = queue;
         this.startFunc = startFunc;
@@ -19,6 +21,14 @@ public class Streem {
         this.dst = null;
         this.nextd = null;
         this.flags = 0;
+    }
+
+    public int tid() {
+        return this.tid;
+    }
+
+    public void tid(int tid) {
+        this.tid = tid;
     }
 
     public TaskMode mode() {
