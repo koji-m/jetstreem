@@ -3,7 +3,7 @@ package pw.koj.jetstreem.core;
 public class Streem {
     private int tid;
     private TaskMode mode;
-    private StrmQueue queue;
+    private StrmCore core;
     private char flags;
     private StrmFunc startFunc;
     private StrmFunc closeFunc;
@@ -11,10 +11,10 @@ public class Streem {
     private Streem dst;
     private Streem nextd;
 
-    public Streem(TaskMode mode, StrmQueue queue, StrmFunc startFunc, StrmFunc closeFunc, Object data) {
+    public Streem(TaskMode mode, StrmCore core, StrmFunc startFunc, StrmFunc closeFunc, Object data) {
         this.tid = -1;
         this.mode = mode;
-        this.queue = queue;
+        this.core = core;
         this.startFunc = startFunc;
         this.closeFunc = closeFunc;
         this.data = data;
@@ -35,8 +35,8 @@ public class Streem {
         return this.mode;
     }
 
-    public StrmQueue queue() {
-        return this.queue;
+    public StrmCore core() {
+        return this.core;
     }
 
     public char flags() {
@@ -87,16 +87,16 @@ public class Streem {
         Streem d = this.dst;
 
         while (d != null) {
-            taskPush(d, d.startFunc(), data);
+            core.taskPush(d, d.startFunc(), data, tid + 1);
             d = d.nextd();
         }
         if (func != null) {
-            taskPush(this, func, null);
+            core.taskPush(this, func, null);
         }
     }
 
     private void taskPush(Streem strm, StrmFunc func, Object data) {
-        this.queue.push(strm, func, data);
+        core.thread(tid).queue().push(strm, func, data);
     }
 
     public boolean connect(Streem dstStrm) {
@@ -116,9 +116,38 @@ public class Streem {
         }
 
         if (this.isProducer()) {
-            taskPush(this, this.startFunc, null);
+            StrmCore core = StrmCore.getInstance();
+            core.initTask();
+            core.incrPipeline();
+            core.taskPush(this, this.startFunc, null);
         }
         return true;
+    }
+
+    public void close(Streem strm, Object data) {
+        StrmFunc clFunc = strm.closeFunc();
+        if (clFunc != null) {
+            clFunc.call(strm, null);
+        }
+        Streem d = strm.dst();
+
+        while (d != null) {
+            core.taskPush(d, d::close, null);
+            d = d.nextd();
+        }
+        if (strm.isProducer()) {
+            core.taskPush(strm, Streem::pipelineFinish, null);
+        }
+    }
+
+    public static void pipelineFinish(Streem strm, Object data) {
+        StrmCore core = StrmCore.getInstance();
+        core.decrPipeline();
+        if (core.numOfPipelines() == 0) {
+            synchronized (core) {
+                core.notifyAll();
+            }
+        }
     }
 
 }

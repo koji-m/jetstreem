@@ -11,8 +11,8 @@ public class StrmReadIO extends Streem {
     private ChannelReadBuffer crbuf;
     private StrmIOLoop ioLoop;
 
-    public StrmReadIO(StrmQueue queue, ChannelReadBuffer crbuf, StrmIOLoop ioLoop) {
-        super(TaskMode.PROD, queue, StrmReadIO::stdioRead, StrmReadIO::readClose, null);
+    public StrmReadIO(StrmCore core, ChannelReadBuffer crbuf, StrmIOLoop ioLoop) {
+        super(TaskMode.PROD, core, StrmReadIO::stdioRead, StrmReadIO::readClose, null);
         this.crbuf = crbuf;
         this.ioLoop = ioLoop;
     }
@@ -39,6 +39,8 @@ public class StrmReadIO extends Streem {
         loop.ioStart(strm, strm.crbuf(), cb, SelectionKey.OP_READ);
     }
 
+    public static int emitCount = 0;
+
     public static void readCb(Streem strm, Object data) {
         StrmReadIO ioStrm = (StrmReadIO)strm;
         ChannelReadBuffer crbuf = ioStrm.crbuf();
@@ -54,6 +56,7 @@ public class StrmReadIO extends Streem {
                     crbuf.clear();
                     crbuf.done(true);
                     ioStrm.emit(chArr, null);
+                    StrmReadIO.emitCount++;
                     loop.ioPush(crbuf, ioStrm, StrmReadIO::readCb, SelectionKey.OP_READ);
                 }
                 else {
@@ -89,6 +92,7 @@ public class StrmReadIO extends Streem {
             return;
         }
         ioStrm.emit(chArr, StrmReadIO::readLineCb);
+        StrmReadIO.emitCount++;
     }
 
 

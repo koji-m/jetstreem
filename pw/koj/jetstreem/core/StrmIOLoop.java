@@ -11,7 +11,7 @@ import java.util.*;
 public class StrmIOLoop extends Thread {
     private static StrmIOLoop instance;
     private Selector selector;
-    private StrmQueue taskQueue;
+    private StrmCore core;
     private AtomicInteger waitNum;
     private AtomicInteger registrantNum;
     private boolean active;
@@ -26,7 +26,7 @@ public class StrmIOLoop extends Thread {
         } catch (IOException ex) {
             System.err.println("I/O error: " + ex.getMessage());
         }
-        this.taskQueue = StrmQueue.getInstance();
+        this.core = StrmCore.getInstance();
     }
 
     public static StrmIOLoop getInstance() {
@@ -44,8 +44,8 @@ public class StrmIOLoop extends Thread {
         return this.selector;
     }
 
-    public StrmQueue taskQueue() {
-        return this.taskQueue;
+    public StrmCore core() {
+        return this.core;
     }
 
     public boolean hasNoRegistrant() {
@@ -88,22 +88,24 @@ public class StrmIOLoop extends Thread {
             key.cancel();
         }
         this.registrantNum.decrementAndGet();
+        strm.close(strm, null);
     }
 
     public void run() {
         try {
             while (true) {
                 if (this.active) {
-                if (this.selector.select() > 0) {
-                    Set<SelectionKey> keys = this.selector.selectedKeys();
-                    for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext(); ) {
-                        SelectionKey key = it.next();
-                        it.remove();
-                        StrmIOTask task = (StrmIOTask)key.attachment();
-                        taskQueue.push(task.strm(), task.func(), null);
-                        key.cancel();  // one shot
+                    if (this.selector.select() > 0) {
+                        Set<SelectionKey> keys = this.selector.selectedKeys();
+                        for (Iterator<SelectionKey> it = keys.iterator(); it.hasNext(); ) {
+                            SelectionKey key = it.next();
+                            it.remove();
+                            StrmIOTask task = (StrmIOTask)key.attachment();
+                            core.taskPush(task.strm(), task.func(), null);
+                            key.cancel();  // one shot
+                        }
                     }
-                }} else {
+                } else {
                     break;
                 }
                 while(this.waitNum.intValue() > 0) {

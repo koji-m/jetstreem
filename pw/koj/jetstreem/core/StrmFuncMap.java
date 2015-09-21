@@ -3,8 +3,8 @@ package pw.koj.jetstreem.core;
 public class StrmFuncMap extends Streem {
     private StrmMapFunc mapFunc;
 
-    public StrmFuncMap(StrmQueue queue, StrmMapFunc func) {
-        super(TaskMode.FILT, queue, StrmFuncMap::mapRecv, null, null);
+    public StrmFuncMap(StrmCore core, StrmMapFunc func) {
+        super(TaskMode.FILT, core, StrmFuncMap::mapRecv, null, null);
         this.mapFunc = func;
     }
 
