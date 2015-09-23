@@ -75,11 +75,13 @@ public interface ParserConstants {
   /** RegularExpression Id. */
   int SEM_CLN = 32;
   /** RegularExpression Id. */
-  int LIT_NUMBER = 33;
+  int LIT_INTEGER = 33;
   /** RegularExpression Id. */
-  int LIT_STRING = 37;
+  int LIT_DOUBLE = 34;
   /** RegularExpression Id. */
-  int IDENTIFIER = 38;
+  int LIT_STRING = 38;
+  /** RegularExpression Id. */
+  int IDENTIFIER = 39;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -121,10 +123,11 @@ public interface ParserConstants {
     "<BEG_BRC>",
     "<COMMA>",
     "<SEM_CLN>",
-    "<LIT_NUMBER>",
+    "<LIT_INTEGER>",
+    "<LIT_DOUBLE>",
     "\"\\\"\"",
-    "<token of kind 35>",
     "<token of kind 36>",
+    "<token of kind 37>",
     "\"\\\"\"",
     "<IDENTIFIER>",
     "\"\\n\"",

@@ -104,9 +104,14 @@ TOKEN: {
     | <SEM_CLN : ";" ([" ", "\t", "\n"])*>
 }
 
-// number Literal
+// integer Literal
 TOKEN: {
-    <LIT_NUMBER: (["1"-"9"] (["0"-"9"])* | "0") ("." (["0"-"9"])*)? >
+    <LIT_INTEGER: (["1"-"9"] (["0"-"9"])* | "0")>
+}
+
+// double Literal
+TOKEN: {
+    <LIT_DOUBLE: (["1"-"9"] (["0"-"9"])* | "0") "." (["0"-"9"])*>
 }
 
 // string Literal
@@ -238,7 +243,8 @@ void _primary(): {}
 
 void __primary(): {}
 {
-      <LIT_NUMBER>
+      <LIT_INTEGER>
+    | <LIT_DOUBLE>
     | <LIT_STRING>
     | <IDENTIFIER>
     | <BEG_PAR> expr() ")"
