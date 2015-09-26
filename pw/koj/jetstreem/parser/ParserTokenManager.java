@@ -3,6 +3,8 @@ package pw.koj.jetstreem.parser;
 import java.lang.reflect.*;
 import java.util.*;
 import java.io.*;
+import pw.koj.jetstreem.ast.*;
+import pw.koj.jetstreem.type.*;
 
 /** Token Manager. */
 public class ParserTokenManager implements ParserConstants

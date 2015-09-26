@@ -13,9 +13,13 @@ options {
 
 PARSER_BEGIN(Parser)
 package pw.koj.jetstreem.parser;
+
 import java.lang.reflect.*;
 import java.util.*;
 import java.io.*;
+import pw.koj.jetstreem.ast.*;
+import pw.koj.jetstreem.type.*;
+
 
 public class Parser {
     public static void main(String[] args) {
@@ -35,6 +39,19 @@ public class Parser {
         }
     }
 
+    private String sourceName;
+    private boolean debug;
+
+    public Parser(Reader rdr, String name) {
+        this(rdr, name, false);
+    }
+
+    public Parser(Reader rdr, String name, boolean debug) {
+        this(rdr);
+        this.sourceName = name;
+        this.debug = debug;
+    }
+
     public static void parseFile(File file)
         throws ParseException, FileNotFoundException, UnsupportedEncodingException {
         newFileParser(file).program();
@@ -48,8 +65,17 @@ public class Parser {
               new BufferedReader(
                   new InputStreamReader(new FileInputStream(file),
                                         SOURCE_ENCODING));
-          return new Parser(rdr);
-   }
+          return new Parser(rdr, file.getName());
+    }
+
+    private IntegerLiteralNode integerNode(Location loc, String image) {
+        long i = Long.parseLong(image);
+        return new IntegerLiteralNode(loc, IntegerTypeRef.intRef(), i);
+    }
+
+    protected Location location(Token t) {
+        return new Location(sourceName, t);
+    }
 }
 PARSER_END(Parser)
 
@@ -241,9 +267,15 @@ void _primary(): {}
     | __primary()
 }
 
-void __primary(): {}
+ExprNode __primary():
 {
-      <LIT_INTEGER>
+    Token t;
+}
+{
+      t=<LIT_INTEGER>
+        {
+            return integerNode(location(t), t.image);
+        }
     | <LIT_DOUBLE>
     | <LIT_STRING>
     | <IDENTIFIER>
