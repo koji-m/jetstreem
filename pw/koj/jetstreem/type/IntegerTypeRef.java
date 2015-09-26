@@ -17,6 +17,15 @@ public class IntegerTypeRef extends TypeRef {
     public String name() {
         return name;
     }
+
+    public static IntegerTypeRef intRef() {
+        return new IntegerTypeRef("int");
+    }
+
+    public static IntegerTypeRef charRef() {
+        return new IntegerTypeRef("char");
+    }
+
 }
 
 
