@@ -73,6 +73,11 @@ public class Parser {
         return new IntegerLiteralNode(loc, IntegerTypeRef.intRef(), i);
     }
 
+    private DoubleLiteralNode doubleNode(Location loc, String image) {
+        double l = Double.parseDouble(image);
+        return new DoubleLiteralNode(loc, DoubleTypeRef.doubleRef(), l);
+    }
+
     protected Location location(Token t) {
         return new Location(sourceName, t);
     }
@@ -276,7 +281,10 @@ ExprNode __primary():
         {
             return integerNode(location(t), t.image);
         }
-    | <LIT_DOUBLE>
+    | t=<LIT_DOUBLE>
+        {
+            return doubleNode(location(t), t.image);
+        }
     | <LIT_STRING>
     | <IDENTIFIER>
     | <BEG_PAR> expr() ")"
