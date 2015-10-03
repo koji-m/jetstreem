@@ -342,7 +342,10 @@ ExprNode __primary():
             return new StringLiteralNode(location(t), new ObjectTypeRef("String"),
                                          stringVal(t.image));
         }
-    | <IDENTIFIER>
+    | t=<IDENTIFIER>
+        {
+            return new IdentifierNode(location(t), t.image);
+        }
     | <BEG_PAR> expr() ")"
     | LOOKAHEAD(<BEG_BRK> args()) <BEG_BRK> args() "]"
     | LOOKAHEAD(<BEG_BRK> map_args()) <BEG_BRK> map_args() "]"
