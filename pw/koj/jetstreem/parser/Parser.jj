@@ -78,6 +78,58 @@ public class Parser {
         return new DoubleLiteralNode(loc, DoubleTypeRef.doubleRef(), l);
     }
 
+    private String stringVal(String str) throws ParseException {
+        int pos = 0;
+        int idx;
+        StringBuffer buf = new StringBuffer();
+        String image = str.substring(1, str.length() - 1);
+
+        while((idx = image.indexOf("\\", pos)) >= 0) {
+            buf.append(image.substring(pos, idx));
+            if (image.length() >= idx + 4
+                    && Character.isDigit(image.charAt(idx + 1))
+                    && Character.isDigit(image.charAt(idx + 2))
+                    && Character.isDigit(image.charAt(idx + 3))) {
+                buf.append(unescapeOctal(image.substring(idx + 1, idx + 4)));
+                pos = idx + 4;
+            }
+            else {
+                buf.append(unescapeSeq(image.charAt(idx + 1)));
+                pos = idx + 2;
+            }
+        }
+        if (pos < image.length()) {
+            buf.append(image.substring(pos, image.length()));
+        }
+        return buf.toString();
+    }
+
+    private static final int charMax = 255;
+
+    private char unescapeOctal(String digits) throws ParseException {
+        int i = Integer.parseInt(digits, 8);
+        if (i > charMax) {
+            throw new ParseException("octal character sequence out of range: \\" + digits);
+        }
+        return (char)i;
+    }
+
+    private char unescapeSeq(char c) throws ParseException {
+        switch (c) {
+        case '0': return '\0';
+        case '"': return '"';
+        case '\'': return '\'';
+        case 'f': return '\f';
+        case 'n': return '\n';
+        case 'r': return '\r';
+        case 't': return '\t';
+        // more sequences TBD
+        default:
+            throw new ParseException("unknown escape sequence: \"\\" + c);
+        }
+    }
+
+
     protected Location location(Token t) {
         return new Location(sourceName, t);
     }
@@ -285,7 +337,11 @@ ExprNode __primary():
         {
             return doubleNode(location(t), t.image);
         }
-    | <LIT_STRING>
+    | t=<LIT_STRING>
+        {
+            return new StringLiteralNode(location(t), new ObjectTypeRef("String"),
+                                         stringVal(t.image));
+        }
     | <IDENTIFIER>
     | <BEG_PAR> expr() ")"
     | LOOKAHEAD(<BEG_BRK> args()) <BEG_BRK> args() "]"
