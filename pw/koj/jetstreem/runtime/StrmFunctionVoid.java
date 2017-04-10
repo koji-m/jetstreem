@@ -1,0 +1,5 @@
+
+interface StrmFunctionVoid {
+    Object call();
+}
+

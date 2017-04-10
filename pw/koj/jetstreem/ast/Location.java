@@ -8,6 +8,8 @@ public class Location {
     private String sourceName;
     private StrmToken token;
 
+    public Location() {}
+
     public Location(String sourceName, Token token) {
         this(sourceName, new StrmToken(token));
     }

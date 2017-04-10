@@ -2,7 +2,7 @@ package pw.koj.jetstreem.ast;
 
 import pw.koj.jetstreem.type.*;
 
-public class DoubleLiteralNode extends LiteralNode {
+public class DoubleLiteralNode extends NumberLiteralNode {
     protected double value;
 
     public DoubleLiteralNode(Location loc, TypeRef ref, double value) {

@@ -2,12 +2,12 @@ package pw.koj.jetstreem.ast;
 
 import java.io.PrintStream;
 
-public abstract class Node implements Dumpable {
+public abstract class Node /*implements Dumpable*/ {
     public Node() {
     }
 
     public abstract Location location();
-
+/*
     public void dump() {
         dump(System.out);
     }
@@ -22,5 +22,6 @@ public abstract class Node implements Dumpable {
     }
     
     protected abstract void _dump(Dumper d);
+    */
 }
 

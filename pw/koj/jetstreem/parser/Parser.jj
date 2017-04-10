@@ -6,7 +6,7 @@
 
 options {
     STATIC = false;
-    DEBUG_PARSER = true;
+    DEBUG_PARSER = false;
     UNICODE_INPUT = true;
     JDK_VERSION = "1.8";
 }
@@ -17,24 +17,29 @@ package pw.koj.jetstreem.parser;
 import java.lang.reflect.*;
 import java.util.*;
 import java.io.*;
+import java.time.*;
+import java.time.format.*;
 import pw.koj.jetstreem.ast.*;
 import pw.koj.jetstreem.type.*;
+import org.ho.yaml.Yaml;
 
 
 public class Parser {
     public static void main(String[] args) {
+        List<Node> ast;
         for(String arg: args) {
             try {
-                parseFile(new File(arg));
+                ast = parseFile(new File(arg));
+                Yaml.dump(ast, new File("test.yml"));
             }
             catch(ParseException ex) {
-                System.out.println(ex.getMessage());
+                System.err.println(ex.getMessage());
             }
             catch(FileNotFoundException ex) {
-                System.out.println(ex.getMessage());
+                System.err.println(ex.getMessage());
             }
             catch(UnsupportedEncodingException ex) {
-                System.out.println(ex.getMessage());
+                System.err.println(ex.getMessage());
             }
         }
     }
@@ -52,9 +57,9 @@ public class Parser {
         this.debug = debug;
     }
 
-    public static void parseFile(File file)
+    public static List<Node> parseFile(File file)
         throws ParseException, FileNotFoundException, UnsupportedEncodingException {
-        newFileParser(file).program();
+        return newFileParser(file).program();
     }
 
     public static final String SOURCE_ENCODING = "UTF-8";
@@ -68,8 +73,8 @@ public class Parser {
           return new Parser(rdr, file.getName());
     }
 
-    private IntegerLiteralNode integerNode(Location loc, String image) {
-        long i = Long.parseLong(image);
+    private IntegerLiteralNode integerNode(Location loc, String image, int radix) {
+        long i = Long.parseLong(image, radix);
         return new IntegerLiteralNode(loc, IntegerTypeRef.intRef(), i);
     }
 
@@ -79,28 +84,38 @@ public class Parser {
     }
 
     private String stringVal(String str) throws ParseException {
+        String image = str.substring(1, str.length() - 1);
+        return unescapeString(image);
+    }
+
+    private String symbolVal(String str) throws ParseException {
+        String image = str.substring(1, str.length());
+        return unescapeString(image);
+    }
+
+    private String unescapeString(String str) throws ParseException {
         int pos = 0;
         int idx;
         StringBuffer buf = new StringBuffer();
-        String image = str.substring(1, str.length() - 1);
 
-        while((idx = image.indexOf("\\", pos)) >= 0) {
-            buf.append(image.substring(pos, idx));
-            if (image.length() >= idx + 4
-                    && Character.isDigit(image.charAt(idx + 1))
-                    && Character.isDigit(image.charAt(idx + 2))
-                    && Character.isDigit(image.charAt(idx + 3))) {
-                buf.append(unescapeOctal(image.substring(idx + 1, idx + 4)));
+        while((idx = str.indexOf("\\", pos)) >= 0) {
+            buf.append(str.substring(pos, idx));
+            if (str.length() >= idx + 4
+                    && Character.isDigit(str.charAt(idx + 1))
+                    && Character.isDigit(str.charAt(idx + 2))
+                    && Character.isDigit(str.charAt(idx + 3))) {
+                buf.append(unescapeOctal(str.substring(idx + 1, idx + 4)));
                 pos = idx + 4;
             }
             else {
-                buf.append(unescapeSeq(image.charAt(idx + 1)));
+                buf.append(unescapeSeq(str.charAt(idx + 1)));
                 pos = idx + 2;
             }
         }
-        if (pos < image.length()) {
-            buf.append(image.substring(pos, image.length()));
+        if (pos < str.length()) {
+            buf.append(str.substring(pos, str.length()));
         }
+
         return buf.toString();
     }
 
@@ -130,6 +145,77 @@ public class Parser {
     }
 
 
+    private ZonedDateTime timeVal(String str) throws ParseException {
+        DateTimeFormatter f = DateTimeFormatter.ofPattern("y.M.d['T'H:m[:s[.n]][XXX]]"); 
+        ZonedDateTime zt = null;
+        try {
+            zt = ZonedDateTime.parse(str, f);
+        }
+        catch (DateTimeParseException e1) {
+            try {
+                LocalDateTime lt = LocalDateTime.parse(str, f);
+                zt = lt.atZone(ZoneId.systemDefault());
+            }
+            catch (DateTimeParseException e2) {
+                try {
+                    LocalDate ld = LocalDate.parse(str, f);
+                    zt = ld.atStartOfDay(ZoneId.systemDefault());
+                }
+                catch (DateTimeParseException e3) {
+                    throw new ParseException("time literal parse error: " + e3.getParsedString() + " at index " + e3.getErrorIndex());
+                }
+            }
+        }
+        return zt;
+    }
+
+    private String labelVal(String str) throws ParseException {
+        return str.substring(0, str.length() - 1);
+    }
+
+    private String qtLabelVal(String str) throws ParseException {
+        return str.substring(1, str.length() - 2);
+    }
+
+    private ArrayNode createObjNode(Location loc, ArrayNode args, String ns) {
+        ArrayNode ar = args;
+        if (args == null) {
+            ar = new ArrayNode(loc);
+        }
+        ar.withHeader();
+        ar.setNs(ns);
+        return ar;
+    }
+
+    private LambdaNode createBlockNode(Location loc, List<Node> stmts) {
+        return new LambdaNode(loc, null, stmts, true);
+    }
+
+    private LambdaNode createLambdaNode(Location loc, ArgsNode args, Node expr) {
+        LinkedList<Node> body = new LinkedList<Node>();
+        body.add(expr);
+        return createLambdaNode(loc, args, body);
+    }
+
+    private LambdaNode createLambdaNode(Location loc, ArgsNode args, List<Node> stmts) {
+        return new LambdaNode(loc, args, stmts, false);
+    }
+
+    private LetNode createMethodNode(Location loc, IdentifierNode name, ArgsNode args, Node expr) {
+        LinkedList<Node> l = new LinkedList<Node>();
+        l.add(expr);
+        return createMethodNode(loc, name, args, l);
+    }
+
+    private LetNode createMethodNode(Location loc, IdentifierNode name, ArgsNode args, List<Node> body) {
+        if (args == null) {
+            args = new ArgsNode();
+        }
+        args.prepend(new IdentifierNode(loc, "self"));
+
+        return new LetNode(name, createLambdaNode(loc, args, body));
+    }
+
     protected Location location(Token t) {
         return new Location(sourceName, t);
     }
@@ -144,16 +230,28 @@ PARSER_END(Parser)
 // white spaces
 SPECIAL_TOKEN: { <SPACES: ([" ", "\t", "\r", "\f"])+> }
 
+// line comment
+SPECIAL_TOKEN: {
+      <LINE_COMMENT: "#" (~["\n", "\r"])* ("\n" | "\r\n" | "\r")?>
+}
+
 // reserved word
 TOKEN: {
-      <IF       : "if" ([" ", "\t", "\n"])*>
-    | <ELSE     : ([" ", "\t", "\n"])* "else" ([" ", "\t", "\n"])*>
-    | <BREAK    : "break" ([" ", "\t", "\n"])*>
-    | <EMIT     : "emit" ([" ", "\t", "\n"])*>
-    | <RETURN   : "return" ([" ", "\t", "\n"])*>
-    | <NIL      : "nil" ([" ", "\t", "\n"])*>
-    | <TRUE     : "true" ([" ", "\t", "\n"])*>
-    | <FALSE    : "false" ([" ", "\t", "\n"])*>
+      <IF        : "if">
+    | <ELSE      : ([" ", "\t", "\n"])* "else" ([" ", "\t", "\n"])*>
+    | <CASE      : "case" ([" ", "\t", "\n"])*>
+    | <KW_SKIP   : "skip" ([" ", "\t", "\n"])*>
+    | <EMIT      : "emit">
+    | <RETURN    : "return">
+    | <NAMESPACE : "namespace">
+    | <CLASS     : "class">
+    | <IMPORT    : "import">
+    | <DEF       : "def">
+    | <METHOD    : "method">
+    | <NEW       : "new">
+    | <NIL       : "nil">
+    | <TRUE      : "true">
+    | <FALSE     : "false">
 }
 
 // operators
@@ -173,8 +271,13 @@ TOKEN: {
     | <OP_OR     : "||" ([" ", "\t", "\n"])*>
     | <OP_BAR    : "|" ([" ", "\t", "\n"])*>
     | <OP_AMPER  : "&" ([" ", "\t", "\n"])*>
+    | <OP_2_COLON  : "::" ([" ", "\t", "\n"])*>
+    | <OP_ASGN  : "=" ([" ", "\t", "\n"])*>
     | <OP_LASGN  : "<-" ([" ", "\t", "\n"])*>
-    | <OP_RASGN  : "->" ([" ", "\t", "\n"])*>
+    | <OP_RASGN  : "=>" ([" ", "\t", "\n"])*>
+    | <OP_LAMBDA  : "->" ([" ", "\t", "\n"])*>
+    | <OP_PAR_LAMBDA  : ")" ([" ", "\t"])* "->" ([" ", "\t", "\n"])*>
+    | <OP_PAR_LAMBDA_BRC  : ")" ([" ", "\t"])* "->" ([" ", "\t"])* "{" ([" ", "\t", "\n"])*>
 }
 
 // miscs
@@ -183,49 +286,228 @@ TOKEN: {
     | <BEG_PAR : "(" ([" ", "\t", "\n"])*>
     | <BEG_BRK : "[" ([" ", "\t", "\n"])*>
     | <BEG_BRC : "{" ([" ", "\t", "\n"])*>
+    | <END_PAR : ")">
+    | <END_BRK : "]">
+    | <END_BRC : "}">
     | <COMMA   : "," ([" ", "\t", "\n"])*>
     | <SEM_CLN : ";" ([" ", "\t", "\n"])*>
+    | <CLN : ":" ([" ", "\t", "\n"])*>
 }
 
-// integer Literal
+// decimal integer Literal
 TOKEN: {
-    <LIT_INTEGER: (["1"-"9"] (["0"-"9"])* | "0")>
+    <LIT_DECIMAL_INTEGER: (["1"-"9"] (["0"-"9"])* | "0")>
+}
+
+// octal integer Literal
+TOKEN: {
+    <LIT_OCTAL_INTEGER: ("0o" (["0"-"7"])+)>
+}
+
+// hexadecimal integer Literal
+TOKEN: {
+    <LIT_HEXADECIMAL_INTEGER: ("0x" (["0"-"9", "a"-"f", "A"-"F"])+)>
 }
 
 // double Literal
 TOKEN: {
-    <LIT_DOUBLE: (["1"-"9"] (["0"-"9"])* | "0") "." (["0"-"9"])*>
+    <LIT_DOUBLE: (["1"-"9"] (["0"-"9"])* | "0") "." (["0"-"9"])+>
 }
 
-// string Literal
+// string Literal and label
 MORE: { <"\""> : INSIDE_STRING }
 <INSIDE_STRING> MORE: {
       <(~["\"", "\\", "\n", "\r"])+>
     | <"\\" ~[]>
 }
-<INSIDE_STRING> TOKEN: { <LIT_STRING: "\""> : DEFAULT }
+<INSIDE_STRING> TOKEN: { 
+      <LIT_STRING: "\""> : DEFAULT
+    | <QT_LABEL: "\"" ":"> :DEFAULT
+}
+
+// label
+TOKEN: {
+    <LABEL: ["a"-"z", "A"-"Z", "_"] (["a"-"z", "A"-"Z", "0"-"9", "_"])* ":">
+}
 
 // identifier
 TOKEN: {
     <IDENTIFIER: ["a"-"z", "A"-"Z", "_"] (["a"-"z", "A"-"Z", "0"-"9", "_"])*>
 }
 
+// symbol
+TOKEN: {
+    <LIT_SYMBOL: ":" ["a"-"z", "A"-"Z", "_"] (["a"-"z", "A"-"Z", "0"-"9", "_"])*>
+}
+
+// time literal
+TOKEN: {
+    <LIT_TIME: (["0"-"9"])+ "." (["0"-"9"])+ "." (["0"-"9"])+ ("T" (["0"-"9"])+ ":" (["0"-"9"])+ (":" (["0"-"9"])+ ("." (["0"-"9"])+)?)? ("Z" | ["+", "-"] (["0"-"9"])+ (":" (["0"-"9"])+)?)?)?>
+}
 
 /*
  * Syntactic Analysis
  */
 
-void program(): {}
+List<Node> program():
 {
-    compstmt() <EOF>
+    List<Node> l;
+}
+{
+    l=topstmts() <EOF>
         {
             System.out.println("Syntax OK");
+            return l;
         }
 }
 
-void compstmt(): {}
+List<Node> topstmts():
 {
-    [LOOKAHEAD(stmts()) stmts()] [terms()]
+    List<Node> l = null;
+}
+{
+    ( l=topstmt_list() [terms()] 
+    | LOOKAHEAD(terms() topstmt_list()) terms() l=topstmt_list() [terms()]
+    | [terms()]
+    )
+      { return l; }
+}
+
+List<Node> topstmt_list():
+{
+    Node n;
+    List<Node> l;
+}
+{
+    n=topstmt()
+      {
+        l = new LinkedList<Node>();
+        l.add(n);
+      }
+    (LOOKAHEAD(terms() topstmt()) terms() n=topstmt()
+      { l.add(n); }
+    )*
+      { return l; }
+}
+
+Node topstmt():
+{
+    Token t;
+    List<Node> l;
+    IdentifierNode f;
+    Node n;
+    ArgsNode a;
+}
+{
+      <NAMESPACE> t=<IDENTIFIER> <BEG_BRC> l=topstmts() <END_BRC>
+        { return new NamespaceNode(t.image, l); }
+    | <CLASS> t=<IDENTIFIER> <BEG_BRC> l=topstmts() <END_BRC>
+        { return new NamespaceNode(t.image, l); }
+    | <IMPORT> t=<IDENTIFIER>
+        { return new ImportNode(t.image); }
+    | t=<METHOD> f=fname() <BEG_PAR> a=f_args() <END_PAR>
+      ( <BEG_BRC> l=stmts() <END_BRC>
+          { return createMethodNode(location(t), f, a, l); }
+      | <OP_ASGN> n=expr()
+          { return createMethodNode(location(t), f, a, n); }
+      )
+    | n=stmt() { return n; }
+}
+
+List<Node> stmts():
+{
+    List<Node> l = null;
+}
+{
+    (  l=stmt_list() [terms()]
+    |  LOOKAHEAD(terms() stmt_list()) terms() l=stmt_list() [terms()]
+    |  [terms()]
+    )
+      { return l; }
+}
+
+List<Node> stmt_list():
+{
+    List<Node> l;
+    Node n;
+}
+{
+    n=stmt()
+      {
+        l = new LinkedList<Node>();
+        l.add(n);
+      }
+    (LOOKAHEAD(terms() stmt()) terms() n=stmt()
+      { l.add(n); }
+    )*
+      { return l; }
+}
+
+Node stmt():
+{
+    Token t;
+    Node n0, n1;
+    IdentifierNode id;
+    ArgsNode arg;
+    ArrayNode arr = null;
+    List<Node> l;
+}
+{
+      LOOKAHEAD(var() <OP_ASGN>) id=var() <OP_ASGN> n1=expr()
+        { return new LetNode(id, n1); }
+    | LOOKAHEAD(expr() <OP_RASGN>) n0=expr() <OP_RASGN> id=var()
+        { return new LetNode(id, n0); }
+    | n0=expr() { return n0; }
+    | LOOKAHEAD(<DEF> fname() <OP_ASGN>) t=<DEF> n0=fname() <OP_ASGN> n1=expr()
+        { return new LetNode(n0, createLambdaNode(location(t), null, n1)); }
+    | t=<DEF> n0=fname() <BEG_PAR> arg=f_args() <END_PAR>
+      ( <BEG_BRC> l=stmts() <END_BRC>
+        { return new LetNode(n0, createLambdaNode(location(t), arg, l)); }
+      | <OP_ASGN> n1=expr()
+        { return new LetNode(n0, createLambdaNode(location(t), arg, n1)); }
+      )
+    | <KW_SKIP> { return new SkipNode(); }
+    | <EMIT> [arr=args()]
+        { return new EmitNode(arr); }
+    | <RETURN> [arr=args()]
+        { return new ReturnNode(arr); }
+}
+
+ArrayNode args():
+{
+    Node n;
+    ArrayNode ar;
+}
+{
+    n=arg()
+      {
+        ar = new ArrayNode(null);
+        ar.add(n);
+      }
+    (<COMMA> n=arg() { ar.add(n); })*
+      {
+        return ar;
+      }
+}
+
+Node arg():
+{
+    Token t;
+    Node n;
+}
+{
+      n=expr() { return n; }
+    | t=<LABEL> n=expr() { return new PairNode(location(t), labelVal(t.image), n); }
+    | t=<QT_LABEL> n=expr() { return new PairNode(location(t), qtLabelVal(t.image), n); }
+    | t=<OP_MULT> n=expr() { return new SplatNode(location(t), n); }
+}
+
+IdentifierNode var():
+{
+    Token t;
+}
+{
+    t=<IDENTIFIER> { return new IdentifierNode(location(t), t.image); }
 }
 
 void terms(): {}
@@ -233,234 +515,465 @@ void terms(): {}
     (<SEM_CLN> | "\n") (<SEM_CLN> | "\n")*
 }
 
-void stmts(): {}
-{
-    stmt() (LOOKAHEAD(terms() stmt()) terms() stmt())*
-}
-
-void stmt(): {}
-{
-      <EMIT> [args()]
-    | <RETURN> [args()]
-    | <BREAK>
-    | LOOKAHEAD(2) var() "=" expr()
-    | expr()
-}
-
-void var(): {}
-{
-    <IDENTIFIER>
-}
-
-void expr(): {}
-{
-    expr1() (<OP_AMPER> expr1())*
-}
-
-void expr1(): {}
-{
-    expr2() (<OP_BAR> expr2())*
-}
-
-void expr2(): {}
-{
-    expr3() (<OP_OR> expr3())*
-}
-
-void expr3(): {}
-{
-    expr4() (<OP_AND> expr4())*
-}
-
-void expr4(): {}
-{
-    expr5() ( <OP_EQ> expr5()
-            | <OP_NEQ> expr5() )*
-}
-
-void expr5(): {}
-{
-    expr6() ( <OP_LT> expr6()
-            | <OP_LE> expr6()
-            | <OP_GT> expr6()
-            | <OP_GE> expr6() )*
-}
-
-void expr6(): {}
-{
-    expr7() ( <OP_PLUS> expr7()
-            | <OP_MINUS> expr7() )*
-}
-
-void expr7(): {}
-{
-    expr8() ( <OP_MULT> expr8()
-            | <OP_DIV> expr8()
-            | <OP_MOD> expr8() )*
-}
-
-void expr8(): {}
-{
-      <OP_PLUS> primary()
-    | <OP_MINUS> primary()
-    | "!" primary()
-    | "~" primary()
-    | primary()
-}
-
-void primary(): {}
-{
-      _primary() ( LOOKAHEAD(3) <DOT> <IDENTIFIER> <BEG_PAR> [args()] ")"
-      [LOOKAHEAD(block()) block()]
-                | <DOT> <IDENTIFIER> [LOOKAHEAD(block()) block()])*
-}
-
-void _primary(): {}
-{
-    block()
-    | LOOKAHEAD(2)
-      <IDENTIFIER> <BEG_PAR> [args()] ")" [LOOKAHEAD(block()) block()]
-    | LOOKAHEAD(2) <IDENTIFIER> block()
-    | __primary()
-}
-
-ExprNode __primary():
+IdentifierNode fname():
 {
     Token t;
 }
 {
-      t=<LIT_INTEGER>
+      t=<IDENTIFIER> { return new IdentifierNode(location(t), t.image); }
+    | t=<LIT_STRING> { return new IdentifierNode(location(t), stringVal(t.image)); }
+}
+
+ArgsNode f_args():
+{
+    ArgsNode a = null;
+}
+{
+    (    a=f_arg_list() [terms()]
+      | LOOKAHEAD(terms() f_arg_list()) terms() a=f_arg_list() [terms()]
+      | [terms()]
+    ) { return a; }
+}
+
+ArgsNode f_arg_list():
+{
+    Token t;
+    IdentifierNode id;
+    ArgsNode a;
+}
+{
+    id=var()
+      {
+        a = new ArgsNode();
+        a.add(id);
+      }
+    (<COMMA> id=var()
+      {
+        a.add(id);
+      })*
+      { return a; }
+}
+
+Node expr():
+{
+    Token t;
+    ArgsNode a;
+    Node n;
+    List<Node> l;
+}
+{
+      LOOKAHEAD(<BEG_PAR> f_args() <OP_PAR_LAMBDA>) t=<BEG_PAR> a=f_args() <OP_PAR_LAMBDA> n=expr()
         {
-            return integerNode(location(t), t.image);
+          return createLambdaNode(location(t), a, n);
+        }
+    | LOOKAHEAD(<BEG_PAR> f_args() <OP_PAR_LAMBDA_BRC>) t=<BEG_PAR> a=f_args() <OP_PAR_LAMBDA_BRC> l=stmts() <END_BRC>
+        {
+          return createLambdaNode(location(t), a, l);
+        }
+    | n=expr1() { return n; }
+}
+
+Node expr1():
+{
+    Token t;
+    Node n0, n1, n2 = null;
+}
+{
+      t=<IF> n0=condition() n1=expr() [LOOKAHEAD(1) n2=else_part()]
+        {
+          return new IfNode(location(t), n0, n1, n2);
+        }
+    | n0=expr2() { return n0; }
+}
+
+Node expr2():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr3()
+    (LOOKAHEAD(1) t=<OP_AMPER> r=expr3()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr3():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr4()
+    (LOOKAHEAD(1) t=<OP_BAR> r=expr4()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr4():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr5()
+    (LOOKAHEAD(1) t=<OP_OR> r=expr5()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr5():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr6()
+    (LOOKAHEAD(1) t=<OP_AND> r=expr6()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr6():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr7()
+    [LOOKAHEAD(1) (t=<OP_EQ> | t=<OP_NEQ>) r=expr7()
+      { l = new BinaryOpNode(t.image, l, r); }
+    ]
+      { return l; }
+}
+
+Node expr7():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr8()
+    (LOOKAHEAD(1) (t=<OP_LT> | t=<OP_LE> | t=<OP_GT> | t=<OP_GE>) r=expr8()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr8():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr9()
+    (LOOKAHEAD(1) (t=<OP_PLUS> | t=<OP_MINUS>) r=expr9()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr9():
+{
+    Token t;
+    Node l, r;
+}
+{
+    l=expr10()
+    (LOOKAHEAD(1) (t=<OP_MULT> | t=<OP_DIV> | t=<OP_MOD>) r=expr10()
+      { l = new BinaryOpNode(t.image, l, r); }
+    )*
+      { return l; }
+}
+
+Node expr10():
+{
+    Node n;
+}
+{
+      <OP_PLUS> n=expr() { return n; }
+    | <OP_MINUS> n=expr() { return new UnaryOpNode("-", n); }
+    | "!" n=expr() { return new UnaryOpNode("!", n); }
+    | "~" n=expr() { return new UnaryOpNode("~", n); }
+    | n=primary() { return n; }
+}
+
+Node condition():
+{
+    Node n;
+}
+{
+    <BEG_PAR> n=expr() <END_PAR> { return n; }
+}
+
+Node else_part():
+{
+    Node n;
+}
+{
+    <ELSE> n=expr() { return n; }
+}
+
+Node primary():
+{
+    Token t, t0;
+    IdentifierNode name;
+    Node n, blk = null;
+    ArrayNode ar = null;
+}
+{
+    (   n=number()
+      | LOOKAHEAD(fname() <BEG_PAR>) name=fname() <BEG_PAR> [ar=args()] <END_PAR> [blk=block()]
+          {
+            n = new CallNode(name.location(), name, null, ar, blk);
+            name = null; ar = null; blk = null;
+          }
+      | LOOKAHEAD(fname() block()) name=fname() blk=block()
+          {
+            n = new CallNode(name.location(), name, null, null, blk);
+            name = null; blk = null;
+          }
+      | t=<LIT_STRING> { n = new StringLiteralNode(location(t), stringVal(t.image)); }
+      | t=<LIT_SYMBOL> { n = new StringLiteralNode(location(t), symbolVal(t.image)); }
+      | t=<LIT_TIME> { n = new TimeLiteralNode(location(t), timeVal(t.image)); }
+      | name=var()
+          {
+            n = name;
+            name = null;
+          }
+      | <BEG_PAR> n=expr() <END_PAR>
+          {
+            if (n instanceof LambdaNode) {
+              LambdaNode l = (LambdaNode)n;
+              if (l.isBlock()) {
+                l.isBlock(false);
+              }
+            }
+          }
+      | LOOKAHEAD(2) t=<BEG_BRK> <END_BRK> { n = new ArrayNode(location(t)); }
+      | <BEG_BRK> ar=args() <END_BRK>
+          {
+            n = ar.withHeader();
+            ar = null;
+          }
+      | n=block()
+      | t=<NIL> { n = new NilNode(location(t)); }
+      | t=<TRUE> { n = new BoolNode(location(t), true); }
+      | t=<FALSE> { n = new BoolNode(location(t), false); }
+      | t0=<NEW> t=<IDENTIFIER> <BEG_BRK> [ar=args()] <END_BRK>
+          {
+            n = createObjNode(location(t0), ar, t.image);
+            ar = null;
+          }
+      | t=<OP_AMPER> name=fname()
+          {
+            n = new GenFuncNode(location(t), name);
+            name = null;
+          }
+    )
+    (   LOOKAHEAD(<DOT> fname() <BEG_PAR>) t=<DOT> name=fname() <BEG_PAR> [ar=args()] <END_PAR> [blk=block()]
+          {
+            n = new CallNode(location(t), name, n, ar, blk);
+            name = null; ar = null; blk = null;
+          }
+      | LOOKAHEAD(<DOT> fname()) t=<DOT> name=fname() [blk=block()]
+          {
+            n = new CallNode(location(t), name, n, null, blk);
+            name = null; blk = null;
+          }
+      | t=<DOT> <BEG_PAR> [ar=args()] <END_PAR> [blk=block()]
+          {
+            if (!(n instanceof IdentifierNode)) {
+              throw new ParseException("function call syntax error before '.'");
+            }
+            n = new FunCallNode(location(t), (IdentifierNode)n, ar, blk);
+            ar = null; blk = null;
+          }
+    )*
+    { return n; }
+}
+
+Node block():
+{
+    Token t;
+    PatternLambdaNode pl;
+    ArgsNode a;
+    List<Node> s;
+}
+{
+      LOOKAHEAD(2) t=<BEG_BRC> pl=case_body()
+        ( <END_BRC>
+            { return pl; }
+        | <ELSE> <OP_LAMBDA> s=stmts() <END_BRC>)
+            {
+              pl.setNext(new PatternLambdaNode(null, null, s, null));
+              return pl;
+            }
+    | LOOKAHEAD(<BEG_BRC> bparam()) t=<BEG_BRC> a=bparam() s=stmts() <END_BRC>
+        { return createLambdaNode(location(t), a, s); }
+    | t=<BEG_BRC> s=stmts() <END_BRC>
+        { return createBlockNode(location(t), s); }
+}
+
+ArgsNode bparam():
+{
+    ArgsNode a;
+}
+{
+    a=f_args() <OP_LAMBDA> { return a; }
+}
+
+PatternLambdaNode case_body():
+{
+    PatternLambdaNode p, pp, pt;
+    List<Node> s;
+}
+{
+    <CASE> p=cparam() s=stmts()
+      {
+        p.setBody(s);
+        pp = p;
+      }
+    (<CASE> pt=cparam() s=stmts()
+      {
+        pt.setBody(s);
+        pp.setNext(pt);
+        pp = pt;
+      }
+    )*
+    { return p; }
+}
+
+PatternLambdaNode cparam():
+{
+    Token t;
+    Node c, p;
+}
+{
+      <OP_LAMBDA>
+        { return new PatternLambdaNode(new PatternArrayNode(), null, null, null); }
+    | <IF> c=expr() <OP_LAMBDA>
+        { return new PatternLambdaNode(new PatternArrayNode(), c, null, null); }
+    | LOOKAHEAD(pattern() <OP_LAMBDA>) p=pattern() <OP_LAMBDA>
+        { return new PatternLambdaNode(p, null, null, null); }
+    | p=pattern() <IF> c=expr() <OP_LAMBDA>
+        { return new PatternLambdaNode(p, c, null, null); }
+}
+
+Node pattern():
+{
+    Node p1, p2, p3;
+}
+{
+      LOOKAHEAD(pary() <COMMA> <OP_MULT> pterm() <COMMA>)
+      p1=pary() <COMMA> <OP_MULT> p2=pterm() <COMMA> p3=pary()
+        { return new PatternSplatNode(p1, p2, p3); }
+    | LOOKAHEAD(pary() <COMMA>)
+      p1=pary() <COMMA> <OP_MULT> p2=pterm() 
+        { return new PatternSplatNode(p1, p2, null); }
+    | p1=pary() { return p1; }
+    | LOOKAHEAD(<OP_MULT> pterm() <COMMA>)
+      <OP_MULT> p2=pterm() <COMMA> p3=pary()
+        { return new PatternSplatNode(null, p2, p3); }
+    | <OP_MULT> p2=pterm()
+        { return new PatternSplatNode(null, p2, null); }
+    | LOOKAHEAD(pstruct() <COMMA>) p1=pstruct() <COMMA> <OP_MULT> p2=pterm()
+        { return new PatternSplatNode(p1, p2, null); }
+    | p1=pstruct() { return p1; }
+}
+
+PatternArrayNode pary():
+{
+    PatternArrayNode p;
+    Node n;
+}
+{
+    n=pterm()
+      {
+        p = new PatternArrayNode();
+        p.add(n);
+      }
+    (LOOKAHEAD(1) <COMMA> n=pterm() { p.add(n); })*
+    { return p; }
+}
+
+PatternStructNode pstruct():
+{
+    Token t;
+    PatternStructNode p;
+    Node n;
+    String l;
+}
+{
+    (t=<LABEL> { l = labelVal(t.image); } | t=<QT_LABEL> { l = qtLabelVal(t.image); })
+    n=pterm()
+      {
+        p = new PatternStructNode();
+        p.add(new PairNode(location(t), l, n));
+      }
+    (LOOKAHEAD(1) <COMMA>
+    (t=<LABEL> { l = labelVal(t.image); } | t=<QT_LABEL> { l = qtLabelVal(t.image); })
+    n=pterm()
+      {
+        p.add(new PairNode(location(t), l, n));
+      }
+    )*
+    { return p; }
+}
+
+Node pterm():
+{
+    Token t;
+    Node n, p;
+    IdentifierNode id;
+}
+{
+    (   id=var() { n = id; }
+      | n=number()
+      | t=<LIT_STRING> { n = new StringLiteralNode(location(t), stringVal(t.image)); }
+      | t=<NIL> { n = new NilNode(location(t)); }
+      | t=<TRUE> { n = new BoolNode(location(t), true); }
+      | t=<FALSE> { n = new BoolNode(location(t), false); }
+      | LOOKAHEAD(2) <BEG_BRK> <END_BRK> { n = new PatternArrayNode(); }
+      | LOOKAHEAD(<BEG_BRK> "@" <IDENTIFIER> <END_BRK>) <BEG_BRK> "@" t=<IDENTIFIER> <END_BRK> 
+          {
+            n = new PatternNamespaceNode(t.image, new PatternArrayNode());
+          }
+      | LOOKAHEAD(2) <BEG_BRK> "@" t=<IDENTIFIER> p=pattern() <END_BRK>
+          {
+            n = new PatternNamespaceNode(t.image, p);
+          }
+      | <BEG_BRK> n=pattern() <END_BRK>
+    ) ("@" t=<IDENTIFIER> { n = new PatternNamespaceNode(t.image, n); })*
+    { return n; }
+}
+
+
+ExprNode number():
+{
+    Token t;
+}
+{
+      t=<LIT_DECIMAL_INTEGER>
+        {
+            return integerNode(location(t), t.image, 10);
+        }
+    | t=<LIT_OCTAL_INTEGER>
+        {
+            return integerNode(location(t), t.image, 8);
+        }
+    | t=<LIT_HEXADECIMAL_INTEGER>
+        {
+            return integerNode(location(t), t.image, 16);
         }
     | t=<LIT_DOUBLE>
         {
             return doubleNode(location(t), t.image);
         }
-    | t=<LIT_STRING>
-        {
-            return new StringLiteralNode(location(t), new ObjectTypeRef("String"),
-                                         stringVal(t.image));
-        }
-    | t=<IDENTIFIER>
-        {
-            return new IdentifierNode(location(t), t.image);
-        }
-    | <BEG_PAR> expr() ")"
-    | LOOKAHEAD(<BEG_BRK> args()) <BEG_BRK> args() "]"
-    | LOOKAHEAD(<BEG_BRK> map_args()) <BEG_BRK> map_args() "]"
-    | LOOKAHEAD(2) <BEG_BRK> ":" "]"
-    | <BEG_BRK> "]"
-    | <IF> condition() <BEG_BRC> compstmt() "}" [LOOKAHEAD(else_part()) else_part()]
-    | <NIL>
-    | <TRUE>
-    | <FALSE>
 }
 
-void condition(): {}
-{
-    condition1() (<OP_AMPER> condition1())*
-}
-
-void condition1(): {}
-{
-    condition2() (<OP_BAR> condition2())*
-}
-
-void condition2(): {}
-{
-    condition3() (<OP_OR> condition3())*
-}
-
-void condition3(): {}
-{
-    condition4() (<OP_AND> condition4())*
-}
-
-void condition4(): {}
-{
-    condition5() ( <OP_EQ> condition5()
-            | <OP_NEQ> condition5() )*
-}
-
-void condition5(): {}
-{
-    condition6() ( <OP_LT> condition6()
-            | <OP_LE> condition6()
-            | <OP_GT> condition6()
-            | <OP_GE> condition6() )*
-}
-
-void condition6(): {}
-{
-    condition7() ( <OP_PLUS> condition7()
-            | <OP_MINUS> condition7() )*
-}
-
-void condition7(): {}
-{
-    condition8() ( <OP_MULT> condition8()
-            | <OP_DIV> condition8()
-            | <OP_MOD> condition8() )*
-}
-
-void condition8(): {}
-{
-      <OP_PLUS> cond()
-    | <OP_MINUS> cond()
-    | "!" cond()
-    | "~" cond()
-    | cond()
-}
-
-void cond(): {}
-{
-      _cond() ( LOOKAHEAD(3) <DOT> <IDENTIFIER> <BEG_PAR> [args()] ")" 
-                | <DOT> <IDENTIFIER> )*
-}
-
-void _cond(): {}
-{
-      LOOKAHEAD(2) <IDENTIFIER> <BEG_PAR> [args()] ")"
-    | __primary()
-}
-
-void else_part(): {}
-{
-      LOOKAHEAD(2) <ELSE> <IF> expr() <BEG_BRC> compstmt() "}"
-          [LOOKAHEAD(else_part()) else_part()]
-    | <ELSE> <BEG_BRC> compstmt() "}"
-}
-
-void args(): {}
-{
-    expr() (<COMMA> expr())*
-}
-
-void map_args(): {}
-{
-    map() (<COMMA> map())*
-}
-
-void map(): {}
-{
-    expr() ":" expr()
-}
-
-void block(): {}
-{
-      LOOKAHEAD(<BEG_BRC> bparam()) <BEG_BRC> bparam() compstmt() "}"
-    | <BEG_BRC> compstmt() "}"
-}
-
-void bparam(): {}
-{
-      <OP_RASGN>
-    | f_args() <OP_RASGN>
-}
-
-void f_args(): {}
-{
-    <IDENTIFIER> (<COMMA> <IDENTIFIER>)*
-}
 

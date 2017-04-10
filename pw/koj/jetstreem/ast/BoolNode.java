@@ -1,15 +1,15 @@
 package pw.koj.jetstreem.ast;
 
-public class IdentifierNode extends ExprNode {
+public class BoolNode extends ExprNode {
     protected Location location;
-    protected String name;
+    protected boolean value;
 
-    public IdentifierNode() {}
+    public BoolNode() {}
 
-    public IdentifierNode(Location loc, String name) {
+    public BoolNode(Location loc, boolean value) {
         super();
         this.location = loc;
-        this.name = name;
+        this.value = value;
     }
 
     public Location getLocation() {
@@ -20,23 +20,24 @@ public class IdentifierNode extends ExprNode {
         this.location = loc;
     }
 
-    public String getName() {
-        return name;
+    public boolean getValue() {
+        return value;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String name() {
-        return name;
+    public void setValue(boolean val) {
+        this.value = val;
     }
 
     public Location location() {
         return location;
     }
+
+    public boolean value() {
+        return value;
+    }
+
     public void _dump(Dumper d) {
-        // TBD
+      //TBD
     }
 }
 

@@ -13,75 +13,121 @@ public interface ParserConstants {
   /** RegularExpression Id. */
   int SPACES = 1;
   /** RegularExpression Id. */
-  int IF = 2;
+  int LINE_COMMENT = 2;
   /** RegularExpression Id. */
-  int ELSE = 3;
+  int IF = 3;
   /** RegularExpression Id. */
-  int BREAK = 4;
+  int ELSE = 4;
   /** RegularExpression Id. */
-  int EMIT = 5;
+  int CASE = 5;
   /** RegularExpression Id. */
-  int RETURN = 6;
+  int KW_SKIP = 6;
   /** RegularExpression Id. */
-  int NIL = 7;
+  int EMIT = 7;
   /** RegularExpression Id. */
-  int TRUE = 8;
+  int RETURN = 8;
   /** RegularExpression Id. */
-  int FALSE = 9;
+  int NAMESPACE = 9;
   /** RegularExpression Id. */
-  int OP_PLUS = 10;
+  int CLASS = 10;
   /** RegularExpression Id. */
-  int OP_MINUS = 11;
+  int IMPORT = 11;
   /** RegularExpression Id. */
-  int OP_MULT = 12;
+  int DEF = 12;
   /** RegularExpression Id. */
-  int OP_DIV = 13;
+  int METHOD = 13;
   /** RegularExpression Id. */
-  int OP_MOD = 14;
+  int NEW = 14;
   /** RegularExpression Id. */
-  int OP_EQ = 15;
+  int NIL = 15;
   /** RegularExpression Id. */
-  int OP_NEQ = 16;
+  int TRUE = 16;
   /** RegularExpression Id. */
-  int OP_LT = 17;
+  int FALSE = 17;
   /** RegularExpression Id. */
-  int OP_LE = 18;
+  int OP_PLUS = 18;
   /** RegularExpression Id. */
-  int OP_GT = 19;
+  int OP_MINUS = 19;
   /** RegularExpression Id. */
-  int OP_GE = 20;
+  int OP_MULT = 20;
   /** RegularExpression Id. */
-  int OP_AND = 21;
+  int OP_DIV = 21;
   /** RegularExpression Id. */
-  int OP_OR = 22;
+  int OP_MOD = 22;
   /** RegularExpression Id. */
-  int OP_BAR = 23;
+  int OP_EQ = 23;
   /** RegularExpression Id. */
-  int OP_AMPER = 24;
+  int OP_NEQ = 24;
   /** RegularExpression Id. */
-  int OP_LASGN = 25;
+  int OP_LT = 25;
   /** RegularExpression Id. */
-  int OP_RASGN = 26;
+  int OP_LE = 26;
   /** RegularExpression Id. */
-  int DOT = 27;
+  int OP_GT = 27;
   /** RegularExpression Id. */
-  int BEG_PAR = 28;
+  int OP_GE = 28;
   /** RegularExpression Id. */
-  int BEG_BRK = 29;
+  int OP_AND = 29;
   /** RegularExpression Id. */
-  int BEG_BRC = 30;
+  int OP_OR = 30;
   /** RegularExpression Id. */
-  int COMMA = 31;
+  int OP_BAR = 31;
   /** RegularExpression Id. */
-  int SEM_CLN = 32;
+  int OP_AMPER = 32;
   /** RegularExpression Id. */
-  int LIT_INTEGER = 33;
+  int OP_2_COLON = 33;
   /** RegularExpression Id. */
-  int LIT_DOUBLE = 34;
+  int OP_ASGN = 34;
   /** RegularExpression Id. */
-  int LIT_STRING = 38;
+  int OP_LASGN = 35;
   /** RegularExpression Id. */
-  int IDENTIFIER = 39;
+  int OP_RASGN = 36;
+  /** RegularExpression Id. */
+  int OP_LAMBDA = 37;
+  /** RegularExpression Id. */
+  int OP_PAR_LAMBDA = 38;
+  /** RegularExpression Id. */
+  int OP_PAR_LAMBDA_BRC = 39;
+  /** RegularExpression Id. */
+  int DOT = 40;
+  /** RegularExpression Id. */
+  int BEG_PAR = 41;
+  /** RegularExpression Id. */
+  int BEG_BRK = 42;
+  /** RegularExpression Id. */
+  int BEG_BRC = 43;
+  /** RegularExpression Id. */
+  int END_PAR = 44;
+  /** RegularExpression Id. */
+  int END_BRK = 45;
+  /** RegularExpression Id. */
+  int END_BRC = 46;
+  /** RegularExpression Id. */
+  int COMMA = 47;
+  /** RegularExpression Id. */
+  int SEM_CLN = 48;
+  /** RegularExpression Id. */
+  int CLN = 49;
+  /** RegularExpression Id. */
+  int LIT_DECIMAL_INTEGER = 50;
+  /** RegularExpression Id. */
+  int LIT_OCTAL_INTEGER = 51;
+  /** RegularExpression Id. */
+  int LIT_HEXADECIMAL_INTEGER = 52;
+  /** RegularExpression Id. */
+  int LIT_DOUBLE = 53;
+  /** RegularExpression Id. */
+  int LIT_STRING = 57;
+  /** RegularExpression Id. */
+  int QT_LABEL = 58;
+  /** RegularExpression Id. */
+  int LABEL = 59;
+  /** RegularExpression Id. */
+  int IDENTIFIER = 60;
+  /** RegularExpression Id. */
+  int LIT_SYMBOL = 61;
+  /** RegularExpression Id. */
+  int LIT_TIME = 62;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -92,14 +138,22 @@ public interface ParserConstants {
   String[] tokenImage = {
     "<EOF>",
     "<SPACES>",
-    "<IF>",
+    "<LINE_COMMENT>",
+    "\"if\"",
     "<ELSE>",
-    "<BREAK>",
-    "<EMIT>",
-    "<RETURN>",
-    "<NIL>",
-    "<TRUE>",
-    "<FALSE>",
+    "<CASE>",
+    "<KW_SKIP>",
+    "\"emit\"",
+    "\"return\"",
+    "\"namespace\"",
+    "\"class\"",
+    "\"import\"",
+    "\"def\"",
+    "\"method\"",
+    "\"new\"",
+    "\"nil\"",
+    "\"true\"",
+    "\"false\"",
     "<OP_PLUS>",
     "<OP_MINUS>",
     "<OP_MULT>",
@@ -115,29 +169,40 @@ public interface ParserConstants {
     "<OP_OR>",
     "<OP_BAR>",
     "<OP_AMPER>",
+    "<OP_2_COLON>",
+    "<OP_ASGN>",
     "<OP_LASGN>",
     "<OP_RASGN>",
+    "<OP_LAMBDA>",
+    "<OP_PAR_LAMBDA>",
+    "<OP_PAR_LAMBDA_BRC>",
     "<DOT>",
     "<BEG_PAR>",
     "<BEG_BRK>",
     "<BEG_BRC>",
-    "<COMMA>",
-    "<SEM_CLN>",
-    "<LIT_INTEGER>",
-    "<LIT_DOUBLE>",
-    "\"\\\"\"",
-    "<token of kind 36>",
-    "<token of kind 37>",
-    "\"\\\"\"",
-    "<IDENTIFIER>",
-    "\"\\n\"",
-    "\"=\"",
-    "\"!\"",
-    "\"~\"",
     "\")\"",
     "\"]\"",
-    "\":\"",
     "\"}\"",
+    "<COMMA>",
+    "<SEM_CLN>",
+    "<CLN>",
+    "<LIT_DECIMAL_INTEGER>",
+    "<LIT_OCTAL_INTEGER>",
+    "<LIT_HEXADECIMAL_INTEGER>",
+    "<LIT_DOUBLE>",
+    "\"\\\"\"",
+    "<token of kind 55>",
+    "<token of kind 56>",
+    "\"\\\"\"",
+    "<QT_LABEL>",
+    "<LABEL>",
+    "<IDENTIFIER>",
+    "<LIT_SYMBOL>",
+    "<LIT_TIME>",
+    "\"\\n\"",
+    "\"!\"",
+    "\"~\"",
+    "\"@\"",
   };
 
 }
