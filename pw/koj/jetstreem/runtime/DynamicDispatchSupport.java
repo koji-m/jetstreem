@@ -111,7 +111,7 @@ public class DynamicDispatchSupport {
         MethodHandle mh = null;
         if (firstArg instanceof StrmObject) {
             StrmObject obj = (StrmObject)firstArg;
-            for (Class klass = obj.getClass(); klass != TOPLEVEL; klass = klass.getSuperclass()) {
+            for (Class klass = obj.getClass(); klass != TOPLEVEL; klass = klass.getDeclaringClass()) {
                 try {
                     mh = callSite.lookup.findStaticGetter(
                         klass,
