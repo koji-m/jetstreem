@@ -120,8 +120,10 @@ public class DynamicDispatchSupport {
                     fn = mh.invoke();
                     break;
                 } catch (ReflectiveOperationException e) {
+                    System.out.println("Exception1");
                     //TBD
                 } catch (Throwable e) {
+                    System.out.println("Exception2");
                     //TBD
                 }
             }
@@ -167,8 +169,7 @@ public class DynamicDispatchSupport {
                 guard = MethodHandles.dropArguments(guard, 0, Object.class);
 
                 MethodHandle invoker = INVOKER.bindTo((StrmFunction)fn)
-                                 .asCollector(Object[].class, callSite.type().parameterCount() - 1)
-                                 .asType(callSite.type());
+                                 .asCollector(Object[].class, callSite.type().parameterCount() - 1);
                 invoker = MethodHandles.dropArguments(invoker, 0, Object.class);
 
                 MethodHandle root = MethodHandles.guardWithTest(guard, invoker, callSite.fallback);
