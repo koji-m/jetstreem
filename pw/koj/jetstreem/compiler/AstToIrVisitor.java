@@ -6,44 +6,13 @@ import java.util.*;
 public class AstToIrVisitor implements Visitor {
     List<Stmt> stmts;
 
-    private static final class Context {
-        private Namespace namespace;
-        private Deque<RefTable> refTableStack = new LinkedList<>();
-        private Deque<Namespace> NsStack = new LinkedList<>();
-
-        public RefTable peek() {
-            return refTableStack.peek();
-        }
-
-        public void enterScope() {
-            RefTable refTable = refTableStack.peek().fork();
-            refTableStack.push(refTable);
-        }
-
-        public void exitScope() {
-            refTableStack.pop();
-        }
-
-        public Namespace createNamespace(String name) {
-            RefTable refTable = new RefTable();
-            refTableStack.push(refTable);
-            namespace = new Namespace(name, refTable);
-            NsStack.push(namespace);
-            return namespace;
-        }
-
-        public Namespace getNamespace() {
-            return namespace;
-        }
-    }
-
     
     //
     // Entry point
     //
     
-    public Ir transform(List<Node> ast) {
-        Context ctx = new Context();
+    public List<Ir> transform(List<Node> ast) {
+        Context ctx = new Context("StrmTop");
         return visit(ast, ctx);
     }
 
@@ -52,13 +21,19 @@ public class AstToIrVisitor implements Visitor {
     // visit functions
     // 
 
-    public Ir visit(NamespaceNode ns, Context ctx) {
-        ctx.enterScope();
-        RefTable refTable = ctx.peek();
-        List<Ir> body = ns.accept(this, ctx);
-        ctx.exitScope();
+    public Ir visit(NamespaceNode nsNode, Context ctx) {
+        String nsName = nsNode.getName();
+        List<Ir> stmts = new LinkedList<>();
+        NsRefTable refTable = new NsRefTable(nsName);
+        Namespace ns = new Namespace(nsName, stmts, refTable, ctx.peekNsStack());
 
-        return new Namespace(body, refTable);
+        ctx.enterNsTo(ns);
+        for (Node stmt : nsNode.getStmts()) {
+            stmts.add(stmt.accept(this, ctx));
+        }
+        ctx.exitNs();
+
+        return ns;
     }
 
     public Ir visit(ImportNode imp, Context ctx) {

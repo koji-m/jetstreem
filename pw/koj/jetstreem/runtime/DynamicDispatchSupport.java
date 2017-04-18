@@ -74,6 +74,7 @@ public class DynamicDispatchSupport {
     }
 
     public static Object invoker(StrmFunction fn, Object[] args) {
+        System.out.println("invoker called");
         return fn.call(args);
     }
 
@@ -119,12 +120,18 @@ public class DynamicDispatchSupport {
                         StrmFunction.class);
                     fn = mh.invoke();
                     break;
-                } catch (ReflectiveOperationException e) {
-                    System.out.println("Exception1");
-                    //TBD
-                } catch (Throwable e) {
-                    System.out.println("Exception2");
-                    //TBD
+                } catch (Throwable e1) {
+                    try {
+                        mh = callSite.lookup.findStaticGetter(
+                                klass,
+                                name,
+                                GenericFunction.class);
+                        fn = mh.invoke();
+                        break;
+                    } catch (Throwable e2) {
+                        System.out.println("lookup next");
+                        //TBD
+                    }
                 }
             }
         }

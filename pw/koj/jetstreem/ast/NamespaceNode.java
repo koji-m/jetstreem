@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.ast;
 
 import java.util.List;
+import pw.koj.jetstreem.compiler.*;
 
 public class NamespaceNode extends Node {
     protected String name;
@@ -38,8 +39,8 @@ public class NamespaceNode extends Node {
       //TBD
     }
 
-    public Ir accept(Visitor visitor) {
-        return visitor.visit(this.getStmts());
+    public Ir accept(Visitor visitor, Context ctx) {
+        return visitor.visit(this, ctx);
     }
 }
 
