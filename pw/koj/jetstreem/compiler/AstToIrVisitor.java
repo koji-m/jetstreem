@@ -41,9 +41,16 @@ public class AstToIrVisitor implements Visitor {
     }
 
     public Ir visit(LetNode let, Context ctx) {
+        Ir rhs = let.getRhs().accept(this, ctx);
+
         RefTable refTable = ctx.peek();
-        refTable.addLocalRef((IdentifierNode)let.getLhs());
-        return let.accept(this, ctx);
+        String name = ((IdentifierNode)let.getLhs()).getName();
+        if (refTable.hasLocal(name)) {
+            throw new CompileError("duplicate assignment");
+        }
+        refTable.addLocal(name);
+
+        return new Let(name, rhs);
     }
 
     public Ir visit(SkipNode skp, Context ctx) {
@@ -74,18 +81,26 @@ public class AstToIrVisitor implements Visitor {
     }
 
     public Ir visit(LambdaNode lambda, Context ctx) {
-        ctx.enterScope();
-        RefTable refTable = ctx.peek();
-        refTable.addArgRef(node.getArgs());
-        Ir body = lambda.accept(this, ctx);
-        refTable.index();
+        FuncRefTable refTable = new FuncRefTable();
+        List<IdentifierNode> args = lambda.getArgList();
+
+        for (IdentifierNode id : args) {
+            refTable.addArg(id.getName());
+        }
+
+        ctx.enterScopeTo(refTable);
+        List<Ir> body = new LinkedList<>();
+        for (Node stmt : lambda.getBody()) {
+            body.add(stmt.accept(this, ctx));
+        }
         ctx.exitScope();
 
-        return new StrmFunction(body, refTable);
+        return new Function(body, refTable);
     }
 
 
     public Ir visit(IdentifierNode id, Context ctx) {
+        //from here
         RefTable refTable = ctx.peek();
         Reference ref = refTable.resolveRef(id, new LinkedList<RefTable>());
 

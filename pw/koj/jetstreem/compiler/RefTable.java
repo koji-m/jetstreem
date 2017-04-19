@@ -40,5 +40,9 @@ public class RefTable {
     public void forkTo(RefTable tbl) {
         tbl.setParent(this);
     }
+
+    public boolean hasLocal(String name) {
+        return localRefs.containsKey(name);
+    }
 }
 

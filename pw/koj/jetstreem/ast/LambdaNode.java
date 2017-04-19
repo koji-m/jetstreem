@@ -40,6 +40,10 @@ public class LambdaNode extends ExprNode {
         return args;
     }
 
+    public List<IdentifierNode> getArgList() {
+        return args.getArgs();
+    }
+
     public void setArgs(ArgsNode args) {
         this.args = args;
     }

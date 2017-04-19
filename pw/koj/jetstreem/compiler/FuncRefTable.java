@@ -17,5 +17,9 @@ public class FuncRefTable extends RefTable {
         nArgs++;
     }
 
+    public boolean hasLocal(String name) {
+        return super() || argRefs.containsKey(name);
+    }
+
 }
 
