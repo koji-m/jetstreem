@@ -21,5 +21,29 @@ public class FuncRefTable extends RefTable {
         return super() || argRefs.containsKey(name);
     }
 
+    public RefTable resolveRef(String name) {
+        if (hasLocal(name)) {
+            return this;
+        }
+
+        RefTable parent = this.parent;
+        if (parent == null) {
+            return null;
+        }
+
+        RefTable r = parent.resolveRef(name);
+        
+        if (r instanceof FuncRefTable) {
+            this.addCaptured(name);
+            return this;
+        }
+        else if (r instanceof NsRefTable) {
+            return r;
+        }
+        else {
+            return null;
+        }
+    }
+
 }
 

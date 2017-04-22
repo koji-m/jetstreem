@@ -25,7 +25,12 @@ public class AstToIrVisitor implements Visitor {
         String nsName = nsNode.getName();
         List<Ir> stmts = new LinkedList<>();
         NsRefTable refTable = new NsRefTable(nsName);
-        Namespace ns = new Namespace(nsName, stmts, refTable, ctx.peekNsStack());
+        Namespace currentNs = ctx.peekNsStack();
+        if (currentNs.hasChild(nsName)) {
+            throw CompileError("duplicate namespace definition");
+        }
+        Namespace ns = new Namespace(nsName, stmts, refTable, currentNs);
+        currentNs.addChild(ns);
 
         ctx.enterNsTo(ns);
         for (Node stmt : nsNode.getStmts()) {
@@ -34,16 +39,24 @@ public class AstToIrVisitor implements Visitor {
         ctx.exitNs();
 
         return ns;
-    }
+   }
 
     public Ir visit(ImportNode imp, Context ctx) {
-        //TBD
+        String id = imp.getIdentifier();
+        Namespace ns = ctx.peekNsStack();
+
+        Namespace n = ns.lookupNs(id);
+        if (n == null) {
+            throw new CompileError("namespace not found");
+        }
+
+        return new Import(n);
     }
 
     public Ir visit(LetNode let, Context ctx) {
         Ir rhs = let.getRhs().accept(this, ctx);
 
-        RefTable refTable = ctx.peek();
+        RefTable refTable = ctx.peekRefTableStack();
         String name = ((IdentifierNode)let.getLhs()).getName();
         if (refTable.hasLocal(name)) {
             throw new CompileError("duplicate assignment");
@@ -51,18 +64,30 @@ public class AstToIrVisitor implements Visitor {
         refTable.addLocal(name);
 
         return new Let(name, rhs);
-    }
+   }
 
     public Ir visit(SkipNode skp, Context ctx) {
-        //TBD
+        return new Skip();
     }
 
     public Ir visit(EmitNode emt, Context ctx) {
-        //TBD
+        ArrayList<Node> arr = emt.getArgs().getData();
+        ArrayList<Ir> args = new ArrayList<>();
+        for (Node node : arr) {
+            args.add(node.accept(this, ctx));
+        }
+
+        return new Emit(args);
     }
 
     public Ir visit(ReturnNode ret, Context ctx) {
-        //TBD
+        ArrayList<Node> arr = ret.getArgs().getData();
+        ArrayList<Ir> args = new ArrayList<>();
+        for (Node node : arr) {
+            args.add(node.accept(this, ctx));
+        }
+
+        return new Return(args);
     }
 
     public Ir visit(ExprNode expr, Context ctx) {
@@ -100,12 +125,15 @@ public class AstToIrVisitor implements Visitor {
 
 
     public Ir visit(IdentifierNode id, Context ctx) {
-        //from here
-        RefTable refTable = ctx.peek();
-        Reference ref = refTable.resolveRef(id, new LinkedList<RefTable>());
+        RefTable current = ctx.peekRefTableStack();
+        String name = id.getName();
+        RefTable ref = current.resolveRef(name);
+        if (ref == null) {
+            throw CompileError("variable not defined");
+        }
 
-        return new VarRef(id, ref);
-    }
+        return new VarRef(name, ref);
+   }
 
     public Ir visit(ArrayNode arr, Context ctx) {
         GenArray ar = new GenArray();

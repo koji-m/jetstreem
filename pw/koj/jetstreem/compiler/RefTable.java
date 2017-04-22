@@ -42,7 +42,10 @@ public class RefTable {
     }
 
     public boolean hasLocal(String name) {
-        return localRefs.containsKey(name);
+        return localRefs.containsKey(name) || capturedRef.containsKey(name);
     }
+
+    abstract public RefTable resolveRef(String name);
+
 }
 

@@ -7,12 +7,14 @@ public class Namespace {
     private List<Ir> stmts;
     private RefTable refTable;
     private Namespace parent;
+    private HashMap<String, Namespace> children;
 
     public Namespace(String name, List<Ir> stmts, RefTable refTable, Namespace parent) {
         this.name = name;
         this.stmts = stmts;
         this.refTable = refTable;
         this.parent = parent;
+        this.children = new HashMap<>();
     }
 
     public setName(String name) {
@@ -45,6 +47,33 @@ public class Namespace {
 
     public Namespace getParent() {
         return parent;
+    }
+
+    public boolean hasChild(String name) {
+        return children.containsKey(name);
+    }
+
+    public Namespace getChild(String name) {
+        return children.get(name);
+    }
+
+    public void addChild(Namespace ns) {
+        children.put(ns.getName(), ns);
+    }
+
+    public Namespace lookupNs(String name) {
+        Namespace ns = children.getChild(name);
+        if (ns == null) {
+            if (parent == null) {
+                return null;
+            }
+            else {
+              return parent.lookupNs(name);
+            }
+        }
+        else {
+            return ns;
+        }
     }
 
     public Namespace fork(String name) {
