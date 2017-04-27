@@ -486,7 +486,7 @@ ArrayNode args():
       }
     (<COMMA> n=arg() { ar.add(n); })*
       {
-        return ar;
+        return ar.withHeader();
       }
 }
 
@@ -869,19 +869,19 @@ Node pattern():
     Node p1, p2, p3;
 }
 {
-      LOOKAHEAD(pary() <COMMA> <OP_MULT> pterm() <COMMA>)
-      p1=pary() <COMMA> <OP_MULT> p2=pterm() <COMMA> p3=pary()
+      LOOKAHEAD(pary() <COMMA> <OP_MULT> pvar() <COMMA>)
+      p1=pary() <COMMA> <OP_MULT> p2=pvar() <COMMA> p3=pary()
         { return new PatternSplatNode(p1, p2, p3); }
     | LOOKAHEAD(pary() <COMMA>)
-      p1=pary() <COMMA> <OP_MULT> p2=pterm() 
+      p1=pary() <COMMA> <OP_MULT> p2=pvar() 
         { return new PatternSplatNode(p1, p2, null); }
     | p1=pary() { return p1; }
-    | LOOKAHEAD(<OP_MULT> pterm() <COMMA>)
-      <OP_MULT> p2=pterm() <COMMA> p3=pary()
+    | LOOKAHEAD(<OP_MULT> pvar() <COMMA>)
+      <OP_MULT> p2=pvar() <COMMA> p3=pary()
         { return new PatternSplatNode(null, p2, p3); }
-    | <OP_MULT> p2=pterm()
+    | <OP_MULT> p2=pvar()
         { return new PatternSplatNode(null, p2, null); }
-    | LOOKAHEAD(pstruct() <COMMA>) p1=pstruct() <COMMA> <OP_MULT> p2=pterm()
+    | LOOKAHEAD(pstruct() <COMMA>) p1=pstruct() <COMMA> <OP_MULT> p2=pvar()
         { return new PatternSplatNode(p1, p2, null); }
     | p1=pstruct() { return p1; }
 }
@@ -929,15 +929,14 @@ Node pterm():
 {
     Token t;
     Node n, p;
-    IdentifierNode id;
 }
 {
-    (   id=var() { n = id; }
-      | n=number()
-      | t=<LIT_STRING> { n = new StringLiteralNode(location(t), stringVal(t.image)); }
-      | t=<NIL> { n = new NilNode(location(t)); }
-      | t=<TRUE> { n = new BoolNode(location(t), true); }
-      | t=<FALSE> { n = new BoolNode(location(t), false); }
+    (   n=pvar() 
+      | n=number() { n = new PatternNumberNode(n); }
+      | t=<LIT_STRING> { n = new PatternStringNode(stringVal(t.image)); }
+      | t=<NIL> { n = new PatternNilNode(); }
+      | t=<TRUE> { n = new PatternBoolNode(true); }
+      | t=<FALSE> { n = new PatternBoolNode(false); }
       | LOOKAHEAD(2) <BEG_BRK> <END_BRK> { n = new PatternArrayNode(); }
       | LOOKAHEAD(<BEG_BRK> "@" <IDENTIFIER> <END_BRK>) <BEG_BRK> "@" t=<IDENTIFIER> <END_BRK> 
           {
@@ -952,8 +951,15 @@ Node pterm():
     { return n; }
 }
 
+PatternVarNode pvar():
+{
+    IdentifierNode id;
+}
+{
+    id=var() { return new PatternVarNode(id); }
+}
 
-ExprNode number():
+NumberLiteralNode number():
 {
     Token t;
 }

@@ -2,7 +2,7 @@ package pw.koj.jetstreem.compiler;
 
 import java.util.HashMap;
 
-public class RefTable {
+abstract public class RefTable {
     protected String name;
     protected HashMap<String, Integer> localRefs;
     protected HashMap<String, Integer> capturedRefs;

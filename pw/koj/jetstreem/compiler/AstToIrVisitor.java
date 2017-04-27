@@ -1,29 +1,27 @@
 package pw.koj.jetstreem.compiler;
 
+import pw.koj.jetstreem.compiler.ir.*;
 import java.util.*;
 
 
 public class AstToIrVisitor implements Visitor {
-    List<Stmt> stmts;
 
+    private Context ctx;
+    private ArrayList<String> pvs;
     
     //
     // Entry point
     //
     
-    public List<Ir> transform(List<Node> ast) {
-        Context ctx = new Context("StrmTop");
-        return visit(ast, ctx);
+    public List<Object> transform(Object ast) {
+        ctx = new Context("StrmTop");
+        return visit((List<Node>)ast);
     }
 
 
-    // 
-    // visit functions
-    // 
-
-    public Ir visit(NamespaceNode nsNode, Context ctx) {
+    public Object visit(NamespaceNode nsNode) {
         String nsName = nsNode.getName();
-        List<Ir> stmts = new LinkedList<>();
+        List<Object> stmts = new LinkedList<>();
         NsRefTable refTable = new NsRefTable(nsName);
         Namespace currentNs = ctx.peekNsStack();
         if (currentNs.hasChild(nsName)) {
@@ -34,78 +32,79 @@ public class AstToIrVisitor implements Visitor {
 
         ctx.enterNsTo(ns);
         for (Node stmt : nsNode.getStmts()) {
-            stmts.add(stmt.accept(this, ctx));
+            stmts.add(stmt.accept(this));
         }
         ctx.exitNs();
 
         return ns;
    }
 
-    public Ir visit(ImportNode imp, Context ctx) {
+    public Object visit(ImportNode imp) {
         String id = imp.getIdentifier();
         Namespace ns = ctx.peekNsStack();
 
         Namespace n = ns.lookupNs(id);
         if (n == null) {
-            throw new CompileError("namespace not found");
+            throw new CompileError("namespace not found: " + id);
         }
 
         return new Import(n);
     }
 
-    public Ir visit(LetNode let, Context ctx) {
-        Ir rhs = let.getRhs().accept(this, ctx);
+    public Object visit(LetNode let) {
+        Object rhs = let.getRhs().accept(this);
 
         RefTable refTable = ctx.peekRefTableStack();
         String name = ((IdentifierNode)let.getLhs()).getName();
         if (refTable.hasLocal(name)) {
-            throw new CompileError("duplicate assignment");
+            throw new CompileError("duplicate assignment: " + name);
         }
         refTable.addLocal(name);
 
         return new Let(name, rhs);
    }
 
-    public Ir visit(SkipNode skp, Context ctx) {
+    public Object visit(SkipNode skp) {
         return new Skip();
     }
 
-    public Ir visit(EmitNode emt, Context ctx) {
+    public Object visit(EmitNode emt) {
         ArrayList<Node> arr = emt.getArgs().getData();
-        ArrayList<Ir> args = new ArrayList<>();
+        ArrayList<Object> args = new ArrayList<>();
         for (Node node : arr) {
-            args.add(node.accept(this, ctx));
+            args.add(node.accept(this));
         }
 
         return new Emit(args);
     }
 
-    public Ir visit(ReturnNode ret, Context ctx) {
+    public Object visit(ReturnNode ret) {
         ArrayList<Node> arr = ret.getArgs().getData();
-        ArrayList<Ir> args = new ArrayList<>();
+        ArrayList<Object> args = new ArrayList<>();
         for (Node node : arr) {
-            args.add(node.accept(this, ctx));
+            args.add(node.accept(this));
         }
 
         return new Return(args);
     }
 
-    public Ir visit(ExprNode expr, Context ctx) {
-        return expr.accept(this, ctx);
+    public Object visit(ExprNode expr) {
+        //necessity unknown
+        return expr.accept(this);
     }
 
-    public List<Ir> visit(List<Node> stmts, Context ctx) {
-        List<Ir> stmtsIr = new LinkedList<>();
+    public List<Object> visit(List<Node> stmts) {
+        List<Object> stmtsIr = new LinkedList<>();
 
         for (Node stmt : stmts) {
-            Ir s = stmt.accept(this, ctx);
+            Object s = stmt.accept(this);
             stmtsIr.add(s);
         }
 
         return stmtsIr;
     }
 
-    public Ir visit(LambdaNode lambda, Context ctx) {
+    public Object visit(LambdaNode lambda) {
         FuncRefTable refTable = new FuncRefTable();
         List<IdentifierNode> args = lambda.getArgList();
 
@@ -114,9 +113,9 @@ public class AstToIrVisitor implements Visitor {
         }
 
         ctx.enterScopeTo(refTable);
-        List<Ir> body = new LinkedList<>();
+        List<Object> body = new LinkedList<>();
         for (Node stmt : lambda.getBody()) {
-            body.add(stmt.accept(this, ctx));
+            body.add(stmt.accept(this));
         }
         ctx.exitScope();
 
@@ -124,146 +123,263 @@ public class AstToIrVisitor implements Visitor {
     }
 
 
-    public Ir visit(IdentifierNode id, Context ctx) {
+    public Object visit(IdentifierNode id) {
         RefTable current = ctx.peekRefTableStack();
         String name = id.getName();
         RefTable ref = current.resolveRef(name);
         if (ref == null) {
-            throw CompileError("variable not defined");
+            throw new CompileError("variable not defined");
         }
 
         return new VarRef(name, ref);
    }
 
-    public Ir visit(ArrayNode arr, Context ctx) {
+    public Object visit(ArrayNode arr) {
         GenArray ar = new GenArray();
-        List<Node> data = arr.getData();
+        ArrayList<Node> data = arr.getData();
         for (Node expr : data) {
-            ar.add(expr.accept(this, ctx));
+            ar.add(expr.accept(this));
         }
         ar.setHeaders(arr.getHeaders());
+        ar.setNs(arr.getNs());
         return ar;
     }
 
-    public Ir visit(ArgsNode node, Context ctx) {
+    public Object visit(ArgsNode node) {
         //TBD
     }
 
-    public Ir visit(PairNode pair, Context ctx) {
+    public Object visit(PairNode pair) {
         //TBD
     }
 
-    public Ir visit(SplatNode splt, Context ctx) {
+    public Object visit(SplatNode splt) {
         //TBD
     }
 
-    public Ir visit(IfNode ifn, Context ctx) {
-        Ir cond = ifn.getCond().accept();
-        Ir thenBody = ifn.getThenBody().accept();
+    public Object visit(IfNode ifn) {
+        Object cond = ifn.getCond().accept(this);
+        Object thenBody = ifn.getThenBody().accept(this);
         Node els = ifn.getElseBody();
         if (els == null) {
             return new CondBranch(cond, thenBody);
         }
-        Ir elseBody = els.accept();
+        Object elseBody = els.accept(this);
 
         return new CondBranch(cond, thenBody, elseBody);
     }
 
-    public Ir visit(BinaryOpNode bin, Context ctx) {
-        Ir lhs = bin.getLhs().accept(this, ctx);
-        Ir rhs = bin.getRhs().accept(this, ctx);
+    public Object visit(BinaryOpNode bin) {
+        Object lhs = bin.getLhs().accept(this);
+        Object rhs = bin.getRhs().accept(this);
 
         return new BinaryOp(bin.getOperator(), lhs, rhs);
     }
 
-    public Ir visit(UnaryOpNode una, Context ctx) {
-        Ir expr = una.getExpr().accespt(this, ctx);
+    public Object visit(UnaryOpNode una) {
+        Object expr = una.getExpr().accept(this);
 
         return new UnaryOp(una.getOperator(), expr);
     }
 
-    public Ir visit(CallNode call, Context ctx) {
+    public Object visit(CallNode call) {
         //TBD need modification, runtime ref resolve
-        RefTable refTable = ctx.peek();
-        IdentifierNode id = call.getIdentifier();
-        Reference ref = refTable.resolveRef(id, new LinkedList<RefTable>());
+        RefTable current = ctx.peek();
+        String name = call.getIdentifier().getName();
+        RefTable ref = current.resolveRef(name);
 
         ArrayNode ar = call.getArgs();
         List<Node> data = ar.getData();
-        List<Ir> args = new ArrayList<Ir>();
+        ArrayList<Object> args = new ArrayList<>();
         for (Node a : data) {
-            args.add(a.accept(this, ctx));
+            args.add(a.accept(this));
         }
 
-        return new Call(id, ref, args, ar.getHeaders());
+        return new Call(name, ref, args, ar.getHeaders());
     }
 
-    public Ir visit(StringLiteralNode strn, Context ctx) {
+    public Object visit(StringLiteralNode strn) {
         return new StringConstant(strn.getValue());
     }
 
-    public Ir visit(IntegerLiteralNode intn, Context ctx) {
+    public Object visit(IntegerLiteralNode intn) {
         return new IntegerConstant(intn.getValue());
     }
 
-    public Ir visit(DoubleLiteralNode doublen, Context ctx) {
+    public Object visit(DoubleLiteralNode doublen) {
         return new DoubleConstant(doublen.getValue());
     }
 
-    public Ir visit(TimeLiteralNode time, Context ctx) {
+    public Object visit(TimeLiteralNode time) {
         return new TimeConstant(time.getValue());
     }
 
-    public Ir visit(NilNode nil, Context ctx) {
+    public Object visit(NilNode nil) {
         return new Nil();
     }
 
-    public Ir visit(BoolNode bool, Context ctx) {
+    public Object visit(BoolNode bool) {
         return new BoolConstant(bool.getValue());
     }
 
-    public Ir visit(GenFuncNode genf, Context ctx) {
-        RefTable refTable = ctx.peek();
-        IdentifierNode id = genf.getIdentifier();
-        Reference ref = refTable.resolveRef(id, new LinkedList<RefTable>());
+    public Object visit(GenFuncNode genf) {
+        RefTable current = ctx.peek();
+        String name = genf.getIdentifier().getName();
+        Reference ref = current.resolveRef(name);
 
-        return new GenericFunc(id, ref);
+        return new GenericFunc(name, ref);
     }
 
-    public Ir visit(FunCallNode fcall, Context ctx) {
-        //TBD need modification, runtime ref resolve
-        RefTable refTable = ctx.peek();
-        IdentifierNode id = fcall.getIdentifier();
-        Reference ref = refTable.resolveRef(id, new LinkedList<RefTable>());
+    public Object visit(FunCallNode fcall) {
+        RefTable current = ctx.peek();
+        String name = fcall.getId().getName();
+        Reference ref = current.resolveRef(name);
 
         ArrayNode ar = call.getArgs();
         List<Node> data = ar.getData();
-        List<Ir> args = new ArrayList<Ir>();
+        ArrayList<Object> args = new ArrayList<>();
         for (Node a : data) {
-            args.add(a.accept(this, ctx));
+            args.add(a.accept(this));
         }
 
-        return new FunCall(id, ref, args, ar.getHeaders());
+        return new FunCall(name, ref, args, ar.getHeaders());
     }
 
-    public Ir visit(PatternLambdaNode plambda, Context ctx) {
-        //TBD
+    public Object visit(PatternLambdaNode plambda) {
+        PatternFunc pf = new PatternFunc();
+
+        for (PatternLambdaNode pl = plambda; pl != null; pl = pl.getNext()) {
+            pvs = new ArrayList<>();
+            FuncArm arm = new FuncArm(pl.getPattern().accept(this));
+
+            ctx.enterScopeTo(new PatternRefTable(arm.getPatternVars()));
+            arm.setCondition(pl.getCondition().accept(this));
+            ctx.exitScope();
+
+            FuncRefTable refTable = new FuncRefTable();
+            for (String arg : arm.getPatternVars()) {
+                refTable.addArg(arg);
+            }
+
+            ctx.enterScopeTo(refTable);
+            List<Object> body = new LinkedList<>();
+            for (Node stmt : plambda.getBody()) {
+                body.add(stmt.accept(this));
+            }
+
+            ctx.exitScope();
+
+            arm.setBody(body);
+
+            pf.add(arm);
+        }
+
+        return pf;
     }
 
-    public Ir visit(PatternSplatNode psplt, Context ctx) {
-        //TBD
+    public Object visit(PatternSplatNode psplt) {
+        Node headNode = psplt.getHead();
+        PatternVarNode midNode = psplt.getMid();
+        Node tailNode = psplt.getTail();
+
+        if (headNode instanceof PatternStructNode) {
+            Object head = headNode.accept(this);
+            Object vvar = midNode.accept(this);
+
+            return new PatternStruct(head, vvar);
+        }
+        else if (headNode instanceof PatternArrayNode) {
+            Object head = headNode.accept(this);
+            Object vvar = midNode.accpet(this);
+            if (tailNode instanceof PatternArrayNode) {
+                Object tail = tailNode.accept(this);
+                return new PatternArray(head, vvar, tail);
+            }
+            return new PatternArray(head, vvar, null);
+        }
+        else if (headNode == null) {
+            if (tailNode instanceof PatternArrayNode) {
+                Object vvar = midNode.accept(this);
+                Object tail = tailNode.accept(this);
+                return new PatternArray(null, vvar, tail);
+            }
+            else if (tailNode == null) {
+                return new PatternArray(null, midNode.accept(this), true);
+            }
+        }
+
+        throw new CompileError("illegal splat pattern");
+
     }
 
-    public Ir visit(PatternArrayNode parr, Context ctx) {
-        //TBD
+    public Object visit(PatternArrayNode parr) {
+        PatternArray pattern = new PatternArray();
+        List<Node> pnodes = parr.getData();
+        for (Node p : pnodes) {
+            pattern.add(p.accept(this));
+        }
+
+        return pattern;
     }
 
-    public Ir visit(PatternStructNode parr, Context ctx) {
-        //TBD
+    public Object visit(PatternStructNode pstruct) {
+        PatternStruct pattern = new PatternStruct();
+        List<Node> pnodes = pstruct.getData();
+        for (Node p : pnodes) {
+            PairNode pair = (PairNode)p;
+            pattern.add(pair.getKey(), pair.getValue().accept(this));
+        }
+
+        return pattern;
     }
 
-    public Ir visit(PatternNamespaceNode pns, Context ctx) {
-        //TBD
+    public Object visit(PatternNamespaceNode pns) {
+        PatternNamespace pattern = new PatternNamespace();
+        pattern.setName(pns.getName());
+        pattern.setPattern(pns.getPattern().accept(this));
+
+        return pattern;
     }
+
+    public Object visit(PatternVarNode pvar) {
+        Object pattern;
+        String name = pvar.getName();
+        int idx = pvs.lastIndexOf(name);
+        if (idx < 0) {
+            pattern = new PatternVarBind(pvs.size());
+            pvs.add(name);
+        }
+        else {
+            pattern = new PatternVarRef(idx);
+        }
+
+        return pattern;
+    }
+
+    public Object visit(PatternNumberNode pnum) {
+        NumberLiteralNode num = pnum.getNumber();
+
+        if (num instanceof IntegerLiteralNode) {
+            return new PatternInteger(((IntegerLiteralNode)num).getValue());
+        }
+        else if (num instanceof DoubleLiteralNode) {
+            return new PatternDouble(((DoubleLiteralNode)num).getValue());
+        }
+
+        throw new CompileError("not a number pattern");
+    }
+
+    public Object visit(PatternStringNode pstr) {
+        return new PatternString(pstr.getStr());
+    }
+
+    public Object visit(PatternNilNode pnil) {
+        return new PatternNil();
+    }
+
+    public Object visit(PatternBoolNode pbool) {
+        return new PatternBool(pbool.getBool());
+    }
+
 
 }

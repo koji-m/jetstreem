@@ -1,11 +1,12 @@
 package pw.koj.jetstreem.ast;
 
 public class PatternSplatNode extends Node {
-    protected Node head, mid, tail;
+    protected Node head, tail;
+    protected PatternVarNode mid;
 
     public PatternSplatNode() {}
 
-    public PatternSplatNode(Node head, Node mid, Node tail) {
+    public PatternSplatNode(Node head, PatternVarNode mid, Node tail) {
         this.head = head;
         this.mid = mid;
         this.tail = tail;
@@ -19,11 +20,11 @@ public class PatternSplatNode extends Node {
         this.head = head;
     }
 
-    public Node getMid() {
+    public PatternVarNode getMid() {
         return mid;
     }
 
-    public void setMid(Node mid) {
+    public void setMid(PatternVarNode mid) {
         this.mid = mid;
     }
 
