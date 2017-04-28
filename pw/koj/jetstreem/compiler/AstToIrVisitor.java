@@ -252,12 +252,12 @@ public class AstToIrVisitor implements Visitor {
             pvs = new ArrayList<>();
             FuncArm arm = new FuncArm(pl.getPattern().accept(this));
 
-            ctx.enterScopeTo(new PatternRefTable(arm.getPatternVars()));
+            ctx.enterScopeTo(new PatternRefTable(pvs));
             arm.setCondition(pl.getCondition().accept(this));
             ctx.exitScope();
 
             FuncRefTable refTable = new FuncRefTable();
-            for (String arg : arm.getPatternVars()) {
+            for (String arg : pvs) {
                 refTable.addArg(arg);
             }
 

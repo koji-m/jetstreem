@@ -1,12 +1,12 @@
 package pw.koj.jetstreem.compiler.ir;
 
 public class FuncArm {
-    private Pattern pattern;
+    private Object pattern;
     private Object condition;
     private List<Ir> body;
 
     public FuncArm(Object pattern) {
-        this.pattern = new Pattern(pattern);
+        this.pattern = pattern;
     }
 
     public void setCondition(Object condition) {
@@ -17,7 +17,4 @@ public class FuncArm {
         this.body = body;
     }
 
-    public String[] getPatternVars() {
-        return pattern.getVars();
-    }
 }

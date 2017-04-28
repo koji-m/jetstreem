@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 public class PatternRefTable extends RefTable {
 
-    public PatternRefTable(String[] vars) {
+    public PatternRefTable(List<String> vars) {
         for (String v : vars) {
             addLocal(v);
         }
