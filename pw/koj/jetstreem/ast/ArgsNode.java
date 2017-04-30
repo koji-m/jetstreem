@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import java.util.LinkedList;
 
 public class ArgsNode extends Node {
@@ -28,6 +29,10 @@ public class ArgsNode extends Node {
 
     public Location location() {
         return null;
+    }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
     }
 }
 

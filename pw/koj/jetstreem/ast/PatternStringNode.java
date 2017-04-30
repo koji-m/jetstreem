@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class PatternStringNode extends Node {
     private String str;
 
@@ -14,5 +16,13 @@ public class PatternStringNode extends Node {
     public void setStr(String str) {
         this.str = str;
     }
+
+    public Location location() {
+        return null;
+    }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 
 public class FunCallNode extends ExprNode {
     protected Location location;
@@ -25,7 +26,7 @@ public class FunCallNode extends ExprNode {
         this.location = loc;
     }
 
-    public Node getId() {
+    public IdentifierNode getId() {
         return id;
     }
 
@@ -48,5 +49,9 @@ public class FunCallNode extends ExprNode {
     public Location location() {
         return location;
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class PairNode extends Node {
     protected Location location;
     protected String key;
@@ -49,5 +51,9 @@ public class PairNode extends Node {
     public Location location() {
         return location;
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

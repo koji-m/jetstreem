@@ -1,10 +1,10 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class StringConstant {
+public class PatternString {
     private String value;
 
-    public StringConstant(String value) {
-        this.value =value;
+    public PatternString(String value) {
+        this.value = value;
     }
 
     public String getValue() {

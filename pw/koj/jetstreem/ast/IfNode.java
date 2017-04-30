@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class IfNode extends ExprNode {
     protected Location location;
     protected Node cond;
@@ -50,5 +52,9 @@ public class IfNode extends ExprNode {
     public Location location() {
         return location;
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

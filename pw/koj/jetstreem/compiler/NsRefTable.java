@@ -3,6 +3,10 @@ package pw.koj.jetstreem.compiler;
 import java.util.HashMap;
 
 public class NsRefTable extends RefTable {
+    public NsRefTable() {
+        super();
+    }
+
     public NsRefTable(String name) {
         super(name);
     }
@@ -17,6 +21,7 @@ public class NsRefTable extends RefTable {
             return null;
         }
 
+        System.out.println("DEBUG:" + name);
         RefTable r = parent.resolveRef(name);
 
         if (r instanceof NsRefTable) {

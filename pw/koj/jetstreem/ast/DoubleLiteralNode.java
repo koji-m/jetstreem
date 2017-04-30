@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import pw.koj.jetstreem.type.*;
 
 public class DoubleLiteralNode extends NumberLiteralNode {
@@ -10,12 +11,16 @@ public class DoubleLiteralNode extends NumberLiteralNode {
         this.value = value;
     }
 
-    public double value() {
+    public double getValue() {
         return value;
     }
 
     protected void _dump(Dumper d) {
         // TBD
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

@@ -1,11 +1,19 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class Emit {
-    private ArrayList<Ir> args;
+    private List<Object> args;
 
-    public Emit(ArrayList<Ir> args) {
+    public Emit(List<Object> args) {
+        this.args = args;
+    }
+
+    public List<Object> getArgs() {
+        return args;
+    }
+
+    public void setArgs(List<Object> args) {
         this.args = args;
     }
 }

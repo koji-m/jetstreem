@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class SplatNode extends Node {
     protected Location location;
     protected Node node;
@@ -31,5 +33,9 @@ public class SplatNode extends Node {
     public Location location() {
         return location;
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

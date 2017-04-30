@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.compiler.ir;
 
+import java.util.*;
+
 public class PatternStruct {
     private Map<String, Object> pattern;
     private Object vvar;
@@ -11,7 +13,23 @@ public class PatternStruct {
 
     public PatternStruct(PatternStruct pstruct, Object vvar) {
         this();
-        //TBD copy pattern of psturct to this.pattern
+        this.pattern = (Map<String, Object>)((LinkedHashMap)(pstruct.getPattern())).clone();
+        this.vvar = vvar;
+    }
+
+    public Map<String, Object> getPattern() {
+        return pattern;
+    }
+
+    public void setPattern(Map<String, Object> pattern) {
+        this.pattern = pattern;
+    }
+
+    public Object getVvar() {
+        return vvar;
+    }
+
+    public void setVvar(Object vvar) {
         this.vvar = vvar;
     }
 
@@ -19,8 +37,5 @@ public class PatternStruct {
         pattern.put(key, value);
     }
 
-    public Map<String, Object> getPattern() {
-        return pattern;
-    }
 }
 

@@ -19,6 +19,10 @@ public class Reference {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public int getIndex() {
         return index;
     }
@@ -29,6 +33,10 @@ public class Reference {
 
     public Reference getRef() {
         return ref;
+    }
+
+    public void setRef(Reference ref) {
+        this.ref = ref;
     }
 }
 

@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.compiler;
 
+import pw.koj.jetstreem.ast.*;
 import java.util.HashMap;
 
 abstract public class RefTable {
@@ -18,9 +19,33 @@ abstract public class RefTable {
         parent = null;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public RefTable(String name) {
         this();
         this.name = name;
+    }
+
+    public HashMap<String, Integer> getLocalRefs() {
+        return localRefs;
+    }
+
+    public void setLocalRefs(HashMap<String, Integer> localRefs) {
+        this.localRefs = localRefs;
+    }
+
+    public HashMap<String, Integer> getCapturedRefs() {
+        return capturedRefs;
+    }
+
+    public void setCapturedRefs(HashMap<String, Integer> capturedRefs) {
+        this.capturedRefs = capturedRefs;
     }
 
     public void setParent(RefTable parent) {
@@ -42,7 +67,7 @@ abstract public class RefTable {
     }
 
     public boolean hasLocal(String name) {
-        return localRefs.containsKey(name) || capturedRef.containsKey(name);
+        return localRefs.containsKey(name) || capturedRefs.containsKey(name);
     }
 
     abstract public RefTable resolveRef(String name);

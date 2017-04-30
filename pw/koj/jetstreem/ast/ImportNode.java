@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 
 public class ImportNode extends Node {
     protected String identifier;
@@ -26,5 +27,10 @@ public class ImportNode extends Node {
     public void _dump(Dumper d) {
       //TBD
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }
+
 }
 

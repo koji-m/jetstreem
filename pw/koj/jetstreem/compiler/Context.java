@@ -13,13 +13,6 @@ public class Context {
         nsStack = new LinkedList<>();
     }
 
-    public Context(String name) {
-        this();
-        NsRefTable refTable = new NsRefTable(name);
-        refTableStack.push(refTable);
-        nsStack.push(new Namespace(name, refTable, null));
-    }
-
     public RefTable peekRefTableStack() {
         return refTableStack.peek();
     }
@@ -29,7 +22,10 @@ public class Context {
     }
 
     public void enterScopeTo(RefTable child) {
-        refTableStack.peek().forkTo(child);
+        RefTable tbl = refTableStack.peek();
+        if (tbl != null) {
+            tbl.forkTo(child);
+        }
         refTableStack.push(child);
     }
 

@@ -8,5 +8,13 @@ public class TimeConstant {
     public TimeConstant(ZonedDateTime value) {
         this.value = value;
     }
+
+    public ZonedDateTime getValue() {
+        return value;
+    }
+
+    public void setValue(ZonedDateTime value) {
+        this.value = value;
+    }
 }
 

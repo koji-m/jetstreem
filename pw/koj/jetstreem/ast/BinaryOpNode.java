@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class BinaryOpNode extends ExprNode {
     protected String operator;
     protected Node lhs, rhs;
@@ -40,5 +42,9 @@ public class BinaryOpNode extends ExprNode {
     public Location location() {
         return lhs.location();
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

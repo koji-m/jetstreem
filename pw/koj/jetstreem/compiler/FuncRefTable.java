@@ -12,13 +12,21 @@ public class FuncRefTable extends RefTable {
         nArgs = 0;
     }
 
+    public HashMap<String, Integer> getArgRefs() {
+        return argRefs;
+    }
+
+    public void setArgRefs(HashMap<String, Integer> argRefs) {
+        this.argRefs = argRefs;
+    }
+
     public void addArg(String var) {
         argRefs.put(var, nArgs);
         nArgs++;
     }
 
     public boolean hasLocal(String name) {
-        return super() || argRefs.containsKey(name);
+        return super.hasLocal(name) || argRefs.containsKey(name);
     }
 
     public RefTable resolveRef(String name) {

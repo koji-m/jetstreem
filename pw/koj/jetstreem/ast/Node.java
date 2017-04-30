@@ -1,12 +1,14 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import java.io.PrintStream;
 
-public abstract class Node /*implements Dumpable*/ {
+public abstract class Node {
     public Node() {
     }
 
     public abstract Location location();
+    public abstract Object accept(Visitor visitor) throws CompileError;
 /*
     public void dump() {
         dump(System.out);

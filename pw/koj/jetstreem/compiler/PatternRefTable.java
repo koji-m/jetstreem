@@ -1,6 +1,6 @@
 package pw.koj.jetstreem.compiler;
 
-import java.util.HashMap;
+import java.util.*;
 
 public class PatternRefTable extends RefTable {
 

@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import java.util.*;
 
 public class LambdaNode extends ExprNode {
@@ -78,6 +79,10 @@ public class LambdaNode extends ExprNode {
 
     public Location location() {
         return location;
+    }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
     }
 }
 

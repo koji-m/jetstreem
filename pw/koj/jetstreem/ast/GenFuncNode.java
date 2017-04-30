@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 
 public class GenFuncNode extends ExprNode {
     protected Location location;
@@ -36,5 +37,9 @@ public class GenFuncNode extends ExprNode {
     public Location location() {
         return location;
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

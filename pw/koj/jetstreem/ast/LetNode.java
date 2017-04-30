@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 
 public class LetNode extends Node {
     Node lhs, rhs;
@@ -34,6 +35,10 @@ public class LetNode extends Node {
 
     public void _dump(Dumper d) {
         //TBD
+    }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
     }
 }
 

@@ -7,6 +7,7 @@ import java.time.*;
 import java.time.format.*;
 import pw.koj.jetstreem.ast.*;
 import pw.koj.jetstreem.type.*;
+import pw.koj.jetstreem.compiler.*;
 import org.ho.yaml.Yaml;
 
 /** Token Manager. */

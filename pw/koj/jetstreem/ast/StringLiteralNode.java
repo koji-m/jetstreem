@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class StringLiteralNode extends LiteralNode {
     protected String value;
 
@@ -25,5 +27,9 @@ public class StringLiteralNode extends LiteralNode {
     protected void _dump(Dumper d) {
         // TBD
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

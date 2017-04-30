@@ -6,5 +6,13 @@ public class Import {
     public Import(Namespace ns) {
         this.ns = ns;
     }
+
+    public Namespace getNs() {
+        return ns;
+    }
+
+    public void setNs(Namespace ns) {
+        this.ns = ns;
+    }
 }
 

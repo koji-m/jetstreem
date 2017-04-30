@@ -1,12 +1,13 @@
 package pw.koj.jetstreem.ast;
 
-import java.util.ArrayList;
+import pw.koj.jetstreem.compiler.*;
+import java.util.*;
 
 public class ArrayNode extends ExprNode {
     protected Location location;
     protected String ns;
-    protected ArrayList<String> headers;
-    protected ArrayList<Node> data;
+    protected List<String> headers;
+    protected List<Node> data;
 
 
     public ArrayNode() {}
@@ -19,7 +20,7 @@ public class ArrayNode extends ExprNode {
         this.data = new ArrayList<Node>();
     }
 
-    public ArrayNode(Location loc, String ns, ArrayList<String> headers, ArrayList<Node> data) {
+    public ArrayNode(Location loc, String ns, List<String> headers, List<Node> data) {
         super();
         this.location = loc;
         this.ns = ns;
@@ -43,19 +44,19 @@ public class ArrayNode extends ExprNode {
         this.ns = ns;
     }
 
-    public ArrayList<String> getHeaders() {
+    public List<String> getHeaders() {
         return headers;
     }
 
-    public void setHeaders(ArrayList<String> headers) {
+    public void setHeaders(List<String> headers) {
         this.headers = headers;
     }
 
-    public ArrayList<Node> getData() {
+    public List<Node> getData() {
         return data;
     }
 
-    public void setData(ArrayList<Node> data) {
+    public void setData(List<Node> data) {
         this.data = data;
     }
 
@@ -90,9 +91,8 @@ public class ArrayNode extends ExprNode {
         data.add(0, n);
     }
 
-    public Ir accept(Visitor visitor, Context ctx) {
-        visitor.visit(this, ctx);
-    }
-        
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.compiler;
 
+import pw.koj.jetstreem.ast.*;
 import pw.koj.jetstreem.compiler.ir.*;
 import java.util.*;
 
@@ -9,26 +10,29 @@ public class AstToIrVisitor implements Visitor {
     private Context ctx;
     private ArrayList<String> pvs;
     
-    //
     // Entry point
-    //
-    
-    public List<Object> transform(Object ast) {
-        ctx = new Context("StrmTop");
-        return visit((List<Node>)ast);
+    public Object transform(NamespaceNode ast) throws CompileError {
+        ctx = new Context();
+        return visit(ast);
     }
 
 
-    public Object visit(NamespaceNode nsNode) {
+    public Object visit(NamespaceNode nsNode) throws CompileError {
         String nsName = nsNode.getName();
         List<Object> stmts = new LinkedList<>();
         NsRefTable refTable = new NsRefTable(nsName);
         Namespace currentNs = ctx.peekNsStack();
-        if (currentNs.hasChild(nsName)) {
-            throw CompileError("duplicate namespace definition");
+        Namespace ns;
+        if (currentNs == null) {
+            ns = new Namespace(nsName, stmts, refTable, null);
         }
-        Namespace ns = new Namespace(nsName, stmts, refTable, currentNs);
-        currentNs.addChild(ns);
+        else if (currentNs.hasChild(nsName)) {
+            throw new CompileError("duplicate namespace definition");
+        }
+        else {
+            ns = new Namespace(nsName, stmts, refTable, currentNs);
+            currentNs.addChild(ns);
+        }
 
         ctx.enterNsTo(ns);
         for (Node stmt : nsNode.getStmts()) {
@@ -39,7 +43,7 @@ public class AstToIrVisitor implements Visitor {
         return ns;
    }
 
-    public Object visit(ImportNode imp) {
+    public Object visit(ImportNode imp) throws CompileError {
         String id = imp.getIdentifier();
         Namespace ns = ctx.peekNsStack();
 
@@ -51,7 +55,7 @@ public class AstToIrVisitor implements Visitor {
         return new Import(n);
     }
 
-    public Object visit(LetNode let) {
+    public Object visit(LetNode let) throws CompileError {
         Object rhs = let.getRhs().accept(this);
 
         RefTable refTable = ctx.peekRefTableStack();
@@ -64,13 +68,13 @@ public class AstToIrVisitor implements Visitor {
         return new Let(name, rhs);
    }
 
-    public Object visit(SkipNode skp) {
+    public Object visit(SkipNode skp) throws CompileError {
         return new Skip();
     }
 
-    public Object visit(EmitNode emt) {
-        ArrayList<Node> arr = emt.getArgs().getData();
-        ArrayList<Object> args = new ArrayList<>();
+    public Object visit(EmitNode emt) throws CompileError {
+        List<Node> arr = emt.getArgs().getData();
+        List<Object> args = new ArrayList<>();
         for (Node node : arr) {
             args.add(node.accept(this));
         }
@@ -78,9 +82,9 @@ public class AstToIrVisitor implements Visitor {
         return new Emit(args);
     }
 
-    public Object visit(ReturnNode ret) {
-        ArrayList<Node> arr = ret.getArgs().getData();
-        ArrayList<Object> args = new ArrayList<>();
+    public Object visit(ReturnNode ret) throws CompileError {
+        List<Node> arr = ret.getArgs().getData();
+        List<Object> args = new ArrayList<>();
         for (Node node : arr) {
             args.add(node.accept(this));
         }
@@ -88,23 +92,7 @@ public class AstToIrVisitor implements Visitor {
         return new Return(args);
     }
 
-    public Object visit(ExprNode expr) {
-        //necessity unknown
-        return expr.accept(this);
-    }
-
-    public List<Object> visit(List<Node> stmts) {
-        List<Object> stmtsIr = new LinkedList<>();
-
-        for (Node stmt : stmts) {
-            Object s = stmt.accept(this);
-            stmtsIr.add(s);
-        }
-
-        return stmtsIr;
-    }
-
-    public Object visit(LambdaNode lambda) {
+    public Object visit(LambdaNode lambda) throws CompileError {
         FuncRefTable refTable = new FuncRefTable();
         List<IdentifierNode> args = lambda.getArgList();
 
@@ -123,7 +111,7 @@ public class AstToIrVisitor implements Visitor {
     }
 
 
-    public Object visit(IdentifierNode id) {
+    public Object visit(IdentifierNode id) throws CompileError {
         RefTable current = ctx.peekRefTableStack();
         String name = id.getName();
         RefTable ref = current.resolveRef(name);
@@ -134,9 +122,9 @@ public class AstToIrVisitor implements Visitor {
         return new VarRef(name, ref);
    }
 
-    public Object visit(ArrayNode arr) {
+    public Object visit(ArrayNode arr) throws CompileError {
         GenArray ar = new GenArray();
-        ArrayList<Node> data = arr.getData();
+        List<Node> data = arr.getData();
         for (Node expr : data) {
             ar.add(expr.accept(this));
         }
@@ -145,19 +133,15 @@ public class AstToIrVisitor implements Visitor {
         return ar;
     }
 
-    public Object visit(ArgsNode node) {
-        //TBD
+    public Object visit(PairNode pair) throws CompileError {
+        return new Pair(pair.getKey(), pair.getValue().accept(this));
     }
 
-    public Object visit(PairNode pair) {
-        //TBD
+    public Object visit(SplatNode splt) throws CompileError {
+        return new Splat(splt.getNode().accept(this));
     }
 
-    public Object visit(SplatNode splt) {
-        //TBD
-    }
-
-    public Object visit(IfNode ifn) {
+    public Object visit(IfNode ifn) throws CompileError {
         Object cond = ifn.getCond().accept(this);
         Object thenBody = ifn.getThenBody().accept(this);
         Node els = ifn.getElseBody();
@@ -169,22 +153,22 @@ public class AstToIrVisitor implements Visitor {
         return new CondBranch(cond, thenBody, elseBody);
     }
 
-    public Object visit(BinaryOpNode bin) {
+    public Object visit(BinaryOpNode bin) throws CompileError {
         Object lhs = bin.getLhs().accept(this);
         Object rhs = bin.getRhs().accept(this);
 
         return new BinaryOp(bin.getOperator(), lhs, rhs);
     }
 
-    public Object visit(UnaryOpNode una) {
+    public Object visit(UnaryOpNode una) throws CompileError {
         Object expr = una.getExpr().accept(this);
 
         return new UnaryOp(una.getOperator(), expr);
     }
 
-    public Object visit(CallNode call) {
+    public Object visit(CallNode call) throws CompileError {
         //TBD need modification, runtime ref resolve
-        RefTable current = ctx.peek();
+        RefTable current = ctx.peekRefTableStack();
         String name = call.getIdentifier().getName();
         RefTable ref = current.resolveRef(name);
 
@@ -198,44 +182,44 @@ public class AstToIrVisitor implements Visitor {
         return new Call(name, ref, args, ar.getHeaders());
     }
 
-    public Object visit(StringLiteralNode strn) {
+    public Object visit(StringLiteralNode strn) throws CompileError {
         return new StringConstant(strn.getValue());
     }
 
-    public Object visit(IntegerLiteralNode intn) {
+    public Object visit(IntegerLiteralNode intn) throws CompileError {
         return new IntegerConstant(intn.getValue());
     }
 
-    public Object visit(DoubleLiteralNode doublen) {
+    public Object visit(DoubleLiteralNode doublen) throws CompileError {
         return new DoubleConstant(doublen.getValue());
     }
 
-    public Object visit(TimeLiteralNode time) {
+    public Object visit(TimeLiteralNode time) throws CompileError {
         return new TimeConstant(time.getValue());
     }
 
-    public Object visit(NilNode nil) {
+    public Object visit(NilNode nil) throws CompileError {
         return new Nil();
     }
 
-    public Object visit(BoolNode bool) {
+    public Object visit(BoolNode bool) throws CompileError {
         return new BoolConstant(bool.getValue());
     }
 
-    public Object visit(GenFuncNode genf) {
-        RefTable current = ctx.peek();
+    public Object visit(GenFuncNode genf) throws CompileError {
+        RefTable current = ctx.peekRefTableStack();
         String name = genf.getIdentifier().getName();
-        Reference ref = current.resolveRef(name);
+        RefTable ref = current.resolveRef(name);
 
         return new GenericFunc(name, ref);
     }
 
-    public Object visit(FunCallNode fcall) {
-        RefTable current = ctx.peek();
+    public Object visit(FunCallNode fcall) throws CompileError {
+        RefTable current = ctx.peekRefTableStack();
         String name = fcall.getId().getName();
-        Reference ref = current.resolveRef(name);
+        RefTable ref = current.resolveRef(name);
 
-        ArrayNode ar = call.getArgs();
+        ArrayNode ar = fcall.getArgs();
         List<Node> data = ar.getData();
         ArrayList<Object> args = new ArrayList<>();
         for (Node a : data) {
@@ -245,7 +229,7 @@ public class AstToIrVisitor implements Visitor {
         return new FunCall(name, ref, args, ar.getHeaders());
     }
 
-    public Object visit(PatternLambdaNode plambda) {
+    public Object visit(PatternLambdaNode plambda) throws CompileError {
         PatternFunc pf = new PatternFunc();
 
         for (PatternLambdaNode pl = plambda; pl != null; pl = pl.getNext()) {
@@ -277,7 +261,7 @@ public class AstToIrVisitor implements Visitor {
         return pf;
     }
 
-    public Object visit(PatternSplatNode psplt) {
+    public Object visit(PatternSplatNode psplt) throws CompileError {
         Node headNode = psplt.getHead();
         PatternVarNode midNode = psplt.getMid();
         Node tailNode = psplt.getTail();
@@ -286,11 +270,11 @@ public class AstToIrVisitor implements Visitor {
             Object head = headNode.accept(this);
             Object vvar = midNode.accept(this);
 
-            return new PatternStruct(head, vvar);
+            return new PatternStruct((PatternStruct)head, vvar);
         }
         else if (headNode instanceof PatternArrayNode) {
             Object head = headNode.accept(this);
-            Object vvar = midNode.accpet(this);
+            Object vvar = midNode.accept(this);
             if (tailNode instanceof PatternArrayNode) {
                 Object tail = tailNode.accept(this);
                 return new PatternArray(head, vvar, tail);
@@ -304,15 +288,14 @@ public class AstToIrVisitor implements Visitor {
                 return new PatternArray(null, vvar, tail);
             }
             else if (tailNode == null) {
-                return new PatternArray(null, midNode.accept(this), true);
+                return new PatternArray(null, midNode.accept(this), null);
             }
         }
 
         throw new CompileError("illegal splat pattern");
-
     }
 
-    public Object visit(PatternArrayNode parr) {
+    public Object visit(PatternArrayNode parr) throws CompileError {
         PatternArray pattern = new PatternArray();
         List<Node> pnodes = parr.getData();
         for (Node p : pnodes) {
@@ -322,7 +305,7 @@ public class AstToIrVisitor implements Visitor {
         return pattern;
     }
 
-    public Object visit(PatternStructNode pstruct) {
+    public Object visit(PatternStructNode pstruct) throws CompileError {
         PatternStruct pattern = new PatternStruct();
         List<Node> pnodes = pstruct.getData();
         for (Node p : pnodes) {
@@ -333,7 +316,7 @@ public class AstToIrVisitor implements Visitor {
         return pattern;
     }
 
-    public Object visit(PatternNamespaceNode pns) {
+    public Object visit(PatternNamespaceNode pns) throws CompileError {
         PatternNamespace pattern = new PatternNamespace();
         pattern.setName(pns.getName());
         pattern.setPattern(pns.getPattern().accept(this));
@@ -341,7 +324,7 @@ public class AstToIrVisitor implements Visitor {
         return pattern;
     }
 
-    public Object visit(PatternVarNode pvar) {
+    public Object visit(PatternVarNode pvar) throws CompileError {
         Object pattern;
         String name = pvar.getName();
         int idx = pvs.lastIndexOf(name);
@@ -356,7 +339,7 @@ public class AstToIrVisitor implements Visitor {
         return pattern;
     }
 
-    public Object visit(PatternNumberNode pnum) {
+    public Object visit(PatternNumberNode pnum) throws CompileError {
         NumberLiteralNode num = pnum.getNumber();
 
         if (num instanceof IntegerLiteralNode) {
@@ -369,17 +352,23 @@ public class AstToIrVisitor implements Visitor {
         throw new CompileError("not a number pattern");
     }
 
-    public Object visit(PatternStringNode pstr) {
+    public Object visit(PatternStringNode pstr) throws CompileError {
         return new PatternString(pstr.getStr());
     }
 
-    public Object visit(PatternNilNode pnil) {
+    public Object visit(PatternNilNode pnil) throws CompileError {
         return new PatternNil();
     }
 
-    public Object visit(PatternBoolNode pbool) {
+    public Object visit(PatternBoolNode pbool) throws CompileError {
         return new PatternBool(pbool.getBool());
     }
 
+    public Object visit(ArgsNode node) throws CompileError {
+        throw new CompileError("internal error: AST to IR ArgsNode");
+    }
 
+    public Object visit(TypeNode node) throws CompileError {
+        throw new CompileError("internal error: AST to IR TypeNode");
+    }
 }

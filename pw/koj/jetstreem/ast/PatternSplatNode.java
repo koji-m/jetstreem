@@ -1,5 +1,7 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
+
 public class PatternSplatNode extends Node {
     protected Node head, tail;
     protected PatternVarNode mid;
@@ -43,5 +45,9 @@ public class PatternSplatNode extends Node {
     public void _dump(Dumper d) {
       //TBD
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

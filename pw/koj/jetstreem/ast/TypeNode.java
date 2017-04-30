@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import pw.koj.jetstreem.type.*;
 
 public class TypeNode extends Node {
@@ -33,6 +34,10 @@ public class TypeNode extends Node {
 
     public Location location() {
         return typeRef == null ? null : typeRef.location();
+    }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
     }
 
     protected void _dump(Dumper d) {

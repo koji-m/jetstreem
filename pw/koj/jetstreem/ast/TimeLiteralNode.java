@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import java.time.ZonedDateTime;
 
 public class TimeLiteralNode extends LiteralNode {
@@ -27,5 +28,9 @@ public class TimeLiteralNode extends LiteralNode {
     protected void _dump(Dumper d) {
         // TBD
     }
+
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

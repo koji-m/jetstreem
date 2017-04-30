@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import java.util.List;
 
 public class PatternStructNode extends PatternArrayNode {
@@ -16,5 +17,8 @@ public class PatternStructNode extends PatternArrayNode {
         super.add(p);
     }
 
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

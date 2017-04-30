@@ -1,5 +1,6 @@
 package pw.koj.jetstreem.ast;
 
+import pw.koj.jetstreem.compiler.*;
 import java.util.List;
 
 public class PatternLambdaNode extends ExprNode {
@@ -59,5 +60,8 @@ public class PatternLambdaNode extends ExprNode {
         // TBD
     }
 
+    public Object accept(Visitor visitor) throws CompileError {
+        return visitor.visit(this);
+    }       
 }
 

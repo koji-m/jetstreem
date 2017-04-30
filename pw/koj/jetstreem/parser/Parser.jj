@@ -21,16 +21,30 @@ import java.time.*;
 import java.time.format.*;
 import pw.koj.jetstreem.ast.*;
 import pw.koj.jetstreem.type.*;
+import pw.koj.jetstreem.compiler.*;
 import org.ho.yaml.Yaml;
 
 
 public class Parser {
-    public static void main(String[] args) {
-        List<Node> ast;
-        for(String arg: args) {
+    public static void main(String[] args) throws Exception {
+        NamespaceNode ast;
+        for(String arg : args) {
             try {
                 ast = parseFile(new File(arg));
-                Yaml.dump(ast, new File("test.yml"));
+                String res = Yaml.dump(ast);
+                res = res.replaceAll("!pw.koj.jetstreem.ast.", "");
+                System.out.println("------------------ AST begin ------------------");
+                System.out.println(res);
+                System.out.println("------------------ AST end --------------------");
+                
+                AstToIrVisitor v = new AstToIrVisitor();
+                Object ir = v.transform(ast);
+                res = Yaml.dump(ir);
+                res = res.replaceAll("!pw.koj.jetstreem.compiler.ir.", "");
+                res = res.replaceAll("!pw.koj.jetstreem.compiler.", "");
+                System.out.println("------------------ IR begin --------------------");
+                System.out.println(res);
+                System.out.println("------------------ IR end ----------------------");
             }
             catch(ParseException ex) {
                 System.err.println(ex.getMessage());
@@ -57,7 +71,7 @@ public class Parser {
         this.debug = debug;
     }
 
-    public static List<Node> parseFile(File file)
+    public static NamespaceNode parseFile(File file)
         throws ParseException, FileNotFoundException, UnsupportedEncodingException {
         return newFileParser(file).program();
     }
@@ -349,7 +363,7 @@ TOKEN: {
  * Syntactic Analysis
  */
 
-List<Node> program():
+NamespaceNode program():
 {
     List<Node> l;
 }
@@ -357,7 +371,7 @@ List<Node> program():
     l=topstmts() <EOF>
         {
             System.out.println("Syntax OK");
-            return l;
+            return new NamespaceNode("StrmTop", l);
         }
 }
 
@@ -531,7 +545,7 @@ ArgsNode f_args():
 {
     (    a=f_arg_list() [terms()]
       | LOOKAHEAD(terms() f_arg_list()) terms() a=f_arg_list() [terms()]
-      | [terms()]
+      | [terms()] { a = new ArgsNode(); }
     ) { return a; }
 }
 
@@ -866,7 +880,8 @@ PatternLambdaNode cparam():
 
 Node pattern():
 {
-    Node p1, p2, p3;
+    Node p1, p3;
+    PatternVarNode p2;
 }
 {
       LOOKAHEAD(pary() <COMMA> <OP_MULT> pvar() <COMMA>)
@@ -929,10 +944,11 @@ Node pterm():
 {
     Token t;
     Node n, p;
+    NumberLiteralNode num;
 }
 {
     (   n=pvar() 
-      | n=number() { n = new PatternNumberNode(n); }
+      | num=number() { n = new PatternNumberNode(num); }
       | t=<LIT_STRING> { n = new PatternStringNode(stringVal(t.image)); }
       | t=<NIL> { n = new PatternNilNode(); }
       | t=<TRUE> { n = new PatternBoolNode(true); }
