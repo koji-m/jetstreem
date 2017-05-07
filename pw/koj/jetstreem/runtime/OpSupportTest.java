@@ -69,16 +69,22 @@ public class OpSupportTest {
         mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
         mv.visitCode();
         mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/type/StrmInteger");
+        mv.visitInsn(DUP);
         mv.visitLdcInsn(new Long(3));
-        mv.visitMethodInsn(INVOKESTATIC, "pw/koj/jetstreem/runtime/type/StrmInteger", "generate", "(J)Ljava/lang/Object;", false);
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/type/StrmInteger", "<init>", "(J)V", false);
+        //mv.visitMethodInsn(INVOKESTATIC, "pw/koj/jetstreem/runtime/type/StrmInteger", "generate", "(J)Ljava/lang/Object;", false);
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/type/StrmInteger");
+        mv.visitInsn(DUP);
         mv.visitLdcInsn(new Long(4));
-        mv.visitMethodInsn(INVOKESTATIC, "pw/koj/jetstreem/runtime/type/StrmInteger", "generate", "(J)Ljava/lang/Object;", false);
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/type/StrmInteger", "<init>", "(J)V", false);
+        //mv.visitMethodInsn(INVOKESTATIC, "pw/koj/jetstreem/runtime/type/StrmInteger", "generate", "(J)Ljava/lang/Object;", false);
         mv.visitInvokeDynamicInsn("opPlus",
                 "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
                 new Handle(H_INVOKESTATIC, "pw/koj/jetstreem/runtime/OpSupport", "bootstrap", "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false));
         mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
         mv.visitInsn(RETURN);
-        mv.visitMaxs(4, 1);
+        mv.visitMaxs(6, 1);
         mv.visitEnd();
 
         cw.visitEnd();
