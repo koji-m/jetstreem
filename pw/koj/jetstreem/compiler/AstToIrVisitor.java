@@ -7,6 +7,12 @@ import java.util.*;
 
 public class AstToIrVisitor implements Visitor {
 
+    // dummy standard lib symbols
+    private static final String[] STDLIB = {
+        "stdin", "stdout", "seq", "map", "each", "filter",
+        "tcp_server", "tcp_socket", "chan", "print"
+    };
+
     private Context ctx;
     private ArrayList<String> pvs;
     
@@ -24,6 +30,10 @@ public class AstToIrVisitor implements Visitor {
         Namespace currentNs = ctx.peekNsStack();
         Namespace ns;
         if (currentNs == null) {
+            // import dummy standard lib symbols
+            for (String s : STDLIB) {
+                refTable.addLocal(s);
+            }
             ns = new Namespace(nsName, stmts, refTable, null);
         }
         else if (currentNs.hasChild(nsName)) {
@@ -93,6 +103,14 @@ public class AstToIrVisitor implements Visitor {
     }
 
     public Object visit(LambdaNode lambda) throws CompileError {
+        if (lambda.isBlock()) {
+            List<Object> body = new LinkedList<>();
+            for (Node stmt : lambda.getBody()) {
+                body.add(stmt.accept(this));
+            }
+            return body;
+        }
+
         FuncRefTable refTable = new FuncRefTable();
         List<IdentifierNode> args = lambda.getArgList();
 
@@ -143,14 +161,33 @@ public class AstToIrVisitor implements Visitor {
 
     public Object visit(IfNode ifn) throws CompileError {
         Object cond = ifn.getCond().accept(this);
+
+        List<Object> truePart;
         Object thenBody = ifn.getThenBody().accept(this);
+        if (thenBody instanceof List) {
+            truePart = (List<Object>)thenBody;
+        }
+        else {
+            truePart = new LinkedList<>();
+            truePart.add(thenBody);
+        }
+
         Node els = ifn.getElseBody();
         if (els == null) {
-            return new CondBranch(cond, thenBody);
+            return new CondBranch(cond, truePart);
         }
-        Object elseBody = els.accept(this);
 
-        return new CondBranch(cond, thenBody, elseBody);
+        List<Object> falsePart;
+        Object elseBody = els.accept(this);
+        if (elseBody instanceof List) {
+            falsePart = (List<Object>)elseBody;
+        }
+        else {
+            falsePart = new LinkedList<>();
+            falsePart.add(elseBody);
+        }
+
+        return new CondBranch(cond, truePart, falsePart);
     }
 
     public Object visit(BinaryOpNode bin) throws CompileError {
@@ -236,9 +273,11 @@ public class AstToIrVisitor implements Visitor {
             pvs = new ArrayList<>();
             FuncArm arm = new FuncArm(pl.getPattern().accept(this));
 
-            ctx.enterScopeTo(new PatternRefTable(pvs));
-            arm.setCondition(pl.getCondition().accept(this));
-            ctx.exitScope();
+            if (pl.getCondition() != null) {
+                ctx.enterScopeTo(new PatternRefTable(pvs));
+                arm.setCondition(pl.getCondition().accept(this));
+                ctx.exitScope();
+            }
 
             FuncRefTable refTable = new FuncRefTable();
             for (String arg : pvs) {
@@ -247,7 +286,7 @@ public class AstToIrVisitor implements Visitor {
 
             ctx.enterScopeTo(refTable);
             List<Object> body = new LinkedList<>();
-            for (Node stmt : plambda.getBody()) {
+            for (Node stmt : pl.getBody()) {
                 body.add(stmt.accept(this));
             }
 
@@ -327,6 +366,9 @@ public class AstToIrVisitor implements Visitor {
     public Object visit(PatternVarNode pvar) throws CompileError {
         Object pattern;
         String name = pvar.getName();
+
+        if (name.equals("_")) { return new PatternVarBind(-1); }
+
         int idx = pvs.lastIndexOf(name);
         if (idx < 0) {
             pattern = new PatternVarBind(pvs.size());

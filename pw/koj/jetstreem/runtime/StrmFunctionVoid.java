@@ -1,5 +1,0 @@
-
-interface StrmFunctionVoid {
-    Object call();
-}
-

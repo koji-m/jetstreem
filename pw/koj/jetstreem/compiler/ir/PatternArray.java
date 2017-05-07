@@ -12,9 +12,13 @@ public class PatternArray {
     }
 
     public PatternArray(Object head, Object vvar, Object tail) {
-        this.head = (List<Object>)((ArrayList<Object>)((PatternArray)head).getHead()).clone();
+        if (head != null) {
+            this.head = (List<Object>)((ArrayList<Object>)((PatternArray)head).getHead()).clone();
+        }
         this.vvar = vvar;
-        this.tail = (List<Object>)((ArrayList<Object>)((PatternArray)tail).getHead()).clone();
+        if (tail != null) {
+            this.tail = (List<Object>)((ArrayList<Object>)((PatternArray)tail).getHead()).clone();
+        }
     }
 
     public List<Object> getHead() {

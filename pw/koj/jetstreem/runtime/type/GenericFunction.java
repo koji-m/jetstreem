@@ -1,3 +1,5 @@
+package pw.koj.jetstreem.runtime.type;
+
 public class GenericFunction {
     private String name;
     // a = &b then capture the object referenced by b

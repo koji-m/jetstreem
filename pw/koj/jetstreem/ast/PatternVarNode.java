@@ -5,6 +5,10 @@ import pw.koj.jetstreem.compiler.*;
 public class PatternVarNode extends Node {
     private String name;
 
+    public PatternVarNode() {
+        super();
+    }
+
     public PatternVarNode(IdentifierNode id) {
         this.name = id.getName();
     }

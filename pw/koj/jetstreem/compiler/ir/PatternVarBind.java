@@ -1,7 +1,11 @@
 package pw.koj.jetstreem.compiler.ir;
 
 public class PatternVarBind {
-    int index;
+    int index; // index == -1 if pattern var is "_"
+
+    public PatternVarBind() {
+        super();
+    }
 
     public PatternVarBind(int index) {
         this.index = index;

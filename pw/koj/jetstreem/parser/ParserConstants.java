@@ -200,6 +200,7 @@ public interface ParserConstants {
     "<LIT_SYMBOL>",
     "<LIT_TIME>",
     "\"\\n\"",
+    "\"\\r\\n\"",
     "\"!\"",
     "\"~\"",
     "\"@\"",

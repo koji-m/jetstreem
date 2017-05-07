@@ -71,15 +71,13 @@ public class Parser {
         this.debug = debug;
     }
 
-    public static NamespaceNode parseFile(File file)
-        throws ParseException, FileNotFoundException, UnsupportedEncodingException {
+    public static NamespaceNode parseFile(File file) throws Exception {
         return newFileParser(file).program();
     }
 
     public static final String SOURCE_ENCODING = "UTF-8";
 
-    public static Parser newFileParser(File file)
-        throws FileNotFoundException, UnsupportedEncodingException {
+    public static Parser newFileParser(File file) throws Exception {
           BufferedReader rdr =
               new BufferedReader(
                   new InputStreamReader(new FileInputStream(file),
@@ -242,17 +240,18 @@ PARSER_END(Parser)
  */
 
 // white spaces
-SPECIAL_TOKEN: { <SPACES: ([" ", "\t", "\r", "\f"])+> }
+SPECIAL_TOKEN: { <SPACES: ([" ", "\t", "\f"])+> }
 
 // line comment
 SPECIAL_TOKEN: {
-      <LINE_COMMENT: "#" (~["\n", "\r"])* ("\n" | "\r\n" | "\r")?>
+      <LINE_COMMENT: "#" (~["\n", "\r"])* >
 }
 
 // reserved word
 TOKEN: {
       <IF        : "if">
-    | <ELSE      : ([" ", "\t", "\n"])* "else" ([" ", "\t", "\n"])*>
+    //| <ELSE      : ([" ", "\t", "\n"])* "else" ([" ", "\t", "\n"])*>
+    | <ELSE      : "else" ([" ", "\t", "\n"])*>
     | <CASE      : "case" ([" ", "\t", "\n"])*>
     | <KW_SKIP   : "skip" ([" ", "\t", "\n"])*>
     | <EMIT      : "emit">
@@ -526,7 +525,7 @@ IdentifierNode var():
 
 void terms(): {}
 {
-    (<SEM_CLN> | "\n") (<SEM_CLN> | "\n")*
+    (<SEM_CLN> | "\n" | "\r\n") (LOOKAHEAD(1) (<SEM_CLN> | "\n" | "\r\n"))*
 }
 
 IdentifierNode fname():
@@ -593,7 +592,7 @@ Node expr1():
     Node n0, n1, n2 = null;
 }
 {
-      t=<IF> n0=condition() n1=expr() [LOOKAHEAD(1) n2=else_part()]
+      t=<IF> n0=condition() n1=expr() [LOOKAHEAD(1) terms()] [LOOKAHEAD(1) n2=else_part()]
         {
           return new IfNode(location(t), n0, n1, n2);
         }
@@ -912,7 +911,7 @@ PatternArrayNode pary():
         p = new PatternArrayNode();
         p.add(n);
       }
-    (LOOKAHEAD(1) <COMMA> n=pterm() { p.add(n); })*
+    (LOOKAHEAD(<COMMA> pterm()) <COMMA> n=pterm() { p.add(n); })*
     { return p; }
 }
 

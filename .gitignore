@@ -5,4 +5,5 @@
 *.strm
 *.yml
 testdata/
+dep/
 

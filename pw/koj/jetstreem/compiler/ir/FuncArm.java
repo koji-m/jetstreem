@@ -7,6 +7,10 @@ public class FuncArm {
     private Object condition;
     private List<Object> body;
 
+    public FuncArm() {
+        super();
+    }
+
     public FuncArm(Object pattern) {
         this.pattern = pattern;
     }

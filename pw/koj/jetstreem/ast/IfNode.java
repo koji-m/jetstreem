@@ -13,6 +13,7 @@ public class IfNode extends ExprNode {
     public IfNode(Location loc, Node cond, Node thenBody, Node elseBody) {
         super();
         this.location = loc;
+        this.cond = cond;
         this.thenBody = thenBody;
         this.elseBody = elseBody;
     }

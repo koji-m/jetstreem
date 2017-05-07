@@ -1,12 +1,17 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import java.util.List;
+import java.util.*;
 
 public class GenArray {
     private List<Object> data;
     private List<String> headers;
     private String ns;
 
+
+    public GenArray() {
+        this.data = new ArrayList<>();
+        this.headers = new ArrayList<>();
+    }
 
     public List<Object> getData() {
         return data;

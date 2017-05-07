@@ -3,6 +3,10 @@ package pw.koj.jetstreem.compiler.ir;
 public class PatternVarRef {
     int index;
 
+    public PatternVarRef() {
+        super();
+    }
+
     public PatternVarRef(int index) {
         this.index = index;
     }

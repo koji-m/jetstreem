@@ -5,6 +5,10 @@ import java.util.List;
 public class Emit {
     private List<Object> args;
 
+    public Emit() {
+        super();
+    }
+
     public Emit(List<Object> args) {
         this.args = args;
     }

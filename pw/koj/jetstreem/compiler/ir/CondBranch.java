@@ -1,16 +1,22 @@
 package pw.koj.jetstreem.compiler.ir;
 
+import java.util.*;
+
 public class CondBranch {
     private Object cond;
-    private Object truePart;
-    private Object falsePart;
+    private List<Object> truePart;
+    private List<Object> falsePart;
 
-    public CondBranch(Object cond, Object truePart) {
+    public CondBranch() {
+        super();
+    }
+
+    public CondBranch(Object cond, List<Object> truePart) {
         this.cond = cond;
         this.truePart = truePart;
     }
 
-    public CondBranch(Object cond, Object truePart, Object falsePart) {
+    public CondBranch(Object cond, List<Object> truePart, List<Object> falsePart) {
         this(cond, truePart);
         this.falsePart = falsePart;
     }
@@ -23,19 +29,19 @@ public class CondBranch {
         this.cond = cond;
     }
 
-    public Object getTruePart() {
+    public List<Object> getTruePart() {
         return truePart;
     }
 
-    public void setTruePart(Object truePart) {
+    public void setTruePart(List<Object> truePart) {
         this.truePart = truePart;
     }
 
-    public Object getFalsePart() {
+    public List<Object> getFalsePart() {
         return falsePart;
     }
 
-    public void setFalsePart(Object falsePart) {
+    public void setFalsePart(List<Object> falsePart) {
         this.falsePart = falsePart;
     }
 }
