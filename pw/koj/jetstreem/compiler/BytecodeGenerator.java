@@ -25,8 +25,8 @@ public class BytecodeGenerator {
         }
     }
 
-    public byte[] generate(Namespace ir, String fileName) {
-        this.fileName = fileName;
+    public byte[] generate(Namespace ir, String className) {
+        this.className = className;
 
         this.cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
         ir.accept(this);
@@ -36,15 +36,25 @@ public class BytecodeGenerator {
     }
 
     public void visit(Namespace ns) {
+        BytecodeGenerator inner = new BytecodeGenerator(
+            ns.getName(),
+            new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS));
+
         if (ns.getParent() == null) {
-            cw.visit(V1_8, ACC_PUBLIC + ACC_SUPER, ns.getName(), null, JOBJ, null);
+            inner.cw().visit(V1_8, ACC_PUBLIC + ACC_SUPER, ns.getName(), null, JOBJ, null);
         }
         else {
             String name = fullNameOf(ns);
-            cw.visit(v1_8, ACC_SUPER, name, null, JOBJ, null);
+            inner.cw().visit(v1_8, ACC_SUPER, name, null, JOBJ, null);
             //generate all inner classes by cw.visitInnerClass() 
             //add generation of this inner class to all parent classes
         }
+
+        for (Object stmt : ns.getStmts()) {
+            stmt.accept(inner);
+        }
+
+        inner.cw().visitEnd();
     }
 }
 
