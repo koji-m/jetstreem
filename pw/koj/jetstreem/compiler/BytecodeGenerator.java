@@ -62,21 +62,21 @@ public class BytecodeGenerator {
     public List<BytecodeGenerator> innerBgs() {
         return innerBgs;
     }
-/*
-    private String fullNameOf(Namespace ns) {
-        return buildNameFrom(ns.getParent()) + ns.getName();
+
+    private String fullNameOf(RefTable ref) {
+        return buildNameFrom(ref.getParent()) + ref.getName();
     }
 
-    private String buildNameFrom(Namespace ns) {
-        if (ns == null) {
+    private String buildNameFrom(RefTable ref) {
+        if (ref == null) {
             return "";
         }
         else {
-            return fullNameOf(ns.getParent()) + ns.getName() + "$";
+            return fullNameOf(ref.getParent()) + ref.getName() + "$";
         }
     }
-*/
-    public void generate(Namespace ns, Deque<RefTable> ctx) {
+
+    public void generate(Namespace ns, Deque<Object> ctx) {
         this.simpleName = ns.getName();
         this.topLevel = this;
         this.innerBgs = new ArrayList<>();
@@ -85,10 +85,10 @@ public class BytecodeGenerator {
         cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
         cw.visit(V1_8, ACC_PUBLIC + ACC_SUPER, ns.getName(), null, JOBJ, null);
 
-        ctx.push(ns.getRefTable());
+        ctx.push(ns);
 
         for (Object stmt : ns.getStmts()) {
-            stmt.accept(this);
+            stmt.accept(this, ctx);
         }
 
         ctx.pop();
@@ -97,7 +97,7 @@ public class BytecodeGenerator {
 
     }
 
-    public void visit(Namespace ns, Deque<RefTable> ctx) {
+    public void visit(Namespace ns, Deque<Object> ctx) {
         BytecodeGenerator inner = new BytecodeGenerator(
             ns.getName(),
             new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS),
@@ -113,10 +113,10 @@ public class BytecodeGenerator {
             bg.outer().cw().visitInnerClass(inner.className(), inner.outerName(), inner.innerName(), ACC_STATIC);
         }
             
-        ctx.push(ns.getRefTable());
+        ctx.push(ns);
 
         for (Object stmt : ns.getStmts()) {
-            stmt.accept(inner);
+            stmt.accept(inner, ctx);
         }
 
         ctx.pop();
@@ -125,6 +125,12 @@ public class BytecodeGenerator {
     }
 
     public void visit(Let let, Deque<RefTable> ctx) {
+        RefTable ref = ctx.peek();
+        RefTable target = ref.resolveRef(let.getName());
+
+        if (target instanceof NsRefTable) {
+            NsRefTable nsRef = (NsRefTable)target;
+            String name = fullNameOf(nsRef);
         //from here
     }
 }
