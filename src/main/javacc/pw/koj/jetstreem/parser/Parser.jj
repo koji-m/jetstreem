@@ -19,8 +19,6 @@ import java.util.*;
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
-import pw.koj.jetstreem.ast.*;
-import pw.koj.jetstreem.type.*;
 import pw.koj.jetstreem.compiler.*;
 import org.ho.yaml.Yaml;
 
@@ -34,7 +32,7 @@ public class Parser {
 
                 ast = parseFile(new File(arg));
                 String res = Yaml.dump(ast);
-                res = res.replaceAll("!pw.koj.jetstreem.ast.", "");
+                res = res.replaceAll("!pw.koj.jetstreem.parser.", "");
                 System.out.println("------------------ AST begin ------------------");
                 System.out.println(res);
                 System.out.println("------------------ AST end --------------------");

@@ -1,4 +1,4 @@
-package pw.koj.jetstreem.ast;
+package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
 import java.time.ZonedDateTime;

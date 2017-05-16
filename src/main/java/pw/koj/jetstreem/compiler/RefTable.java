@@ -1,6 +1,6 @@
 package pw.koj.jetstreem.compiler;
 
-import pw.koj.jetstreem.ast.*;
+import pw.koj.jetstreem.parser.*;
 import java.util.HashMap;
 
 abstract public class RefTable {

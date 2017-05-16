@@ -1,6 +1,4 @@
-package pw.koj.jetstreem.ast;
-
-//import pw.koj.jetstreem.type.Type;
+package pw.koj.jetstreem.parser;
 
 public abstract class ExprNode extends Node {
     public ExprNode() {

@@ -1,8 +1,6 @@
-package pw.koj.jetstreem.ast;
+package pw.koj.jetstreem.parser;
 
 import java.util.*;
-import pw.koj.jetstreem.parser.Token;
-import pw.koj.jetstreem.parser.ParserConstants;
 
 public class StrmToken implements Iterable<StrmToken> {
     private Token token;

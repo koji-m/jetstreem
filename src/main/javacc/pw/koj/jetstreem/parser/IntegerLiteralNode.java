@@ -1,7 +1,6 @@
-package pw.koj.jetstreem.ast;
+package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
-import pw.koj.jetstreem.type.*;
 
 public class IntegerLiteralNode extends NumberLiteralNode {
     protected long value;

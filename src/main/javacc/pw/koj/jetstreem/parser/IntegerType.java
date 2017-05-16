@@ -1,4 +1,4 @@
-package pw.koj.jetstreem.type;
+package pw.koj.jetstreem.parser;
 
 public class IntegerType extends Type {
     protected String name;

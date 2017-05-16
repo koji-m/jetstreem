@@ -1,4 +1,4 @@
-package pw.koj.jetstreem.type;
+package pw.koj.jetstreem.parser;
 
 public abstract class Type {
 }

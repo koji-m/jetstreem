@@ -1,6 +1,5 @@
-package pw.koj.jetstreem.type;
+package pw.koj.jetstreem.parser;
 
-import pw.koj.jetstreem.ast.Location;
 
 public abstract class TypeRef {
     protected Location location;

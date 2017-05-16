@@ -1,7 +1,5 @@
-package pw.koj.jetstreem.ast;
+package pw.koj.jetstreem.parser;
 
-import pw.koj.jetstreem.type.TypeRef;
-import pw.koj.jetstreem.type.Type;
 
 public abstract class NumberLiteralNode extends LiteralNode {
     protected TypeNode typeNode;

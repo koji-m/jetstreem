@@ -1,4 +1,4 @@
-package pw.koj.jetstreem.ast;
+package pw.koj.jetstreem.parser;
 
 public interface Dumpable {
     void dump(Dumper d);

@@ -1,4 +1,4 @@
-package pw.koj.jetstreem.ast;
+package pw.koj.jetstreem.parser;
 
 public abstract class PatternNode extends Node {
 

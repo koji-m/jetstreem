@@ -1,6 +1,4 @@
-package pw.koj.jetstreem.type;
-
-import pw.koj.jetstreem.ast.Location;
+package pw.koj.jetstreem.parser;
 
 public class DoubleTypeRef extends TypeRef {
     protected String name;
