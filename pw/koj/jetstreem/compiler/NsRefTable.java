@@ -32,7 +32,25 @@ public class NsRefTable extends RefTable {
         }
     }
     
-    //for ByteCode generation
+    public RefTable lookupRef(String name) {
+        if (hasLocal(name)) {
+            return this;
+        }
+
+        RefTable parent = this.parent;
+        if (parent == null) {
+            return null;
+        }
+
+        RefTable r = parent.lookupRef(name);
+
+        if (r instanceof NsRefTable) {
+            return r;
+        }
+        else {
+            return null;
+        }
+    }
 
 }
 

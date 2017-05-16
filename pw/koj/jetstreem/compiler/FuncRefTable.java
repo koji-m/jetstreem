@@ -53,5 +53,44 @@ public class FuncRefTable extends RefTable {
         }
     }
 
+    public RefTable lookupRef(String name) {
+        if (hasLocal(name)) {
+            return this;
+        }
+
+        RefTable parent = this.parent;
+        if (parent == null) {
+            return null;
+        }
+
+        RefTable r = parent.lookupRef(name);
+
+        if (r instanceof NsRefTable) {
+            return r;
+        }
+        else {
+            return null;
+        }
+    }
+
+    public int indexOf(String name) throws CompileError {
+        Integer idx = capturedRefs.get(name);
+        if (idx != null) {
+            return idx.intValue();
+        }
+
+        idx = argRefs.get(name);
+        if (idx != null) {
+            return nCaptured + idx.intValue();
+        }
+
+        idx = localRefs.get(name);
+        if (idx != null) {
+            return nCaptured + nArgs + idx.intValue();
+        }
+
+        throw new CompileError("local variable not found");
+    }
+
 }
 

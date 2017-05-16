@@ -30,6 +30,8 @@ public class Parser {
         NamespaceNode ast;
         for(String arg : args) {
             try {
+                String simpleName = simpleNameOf(arg);
+
                 ast = parseFile(new File(arg));
                 String res = Yaml.dump(ast);
                 res = res.replaceAll("!pw.koj.jetstreem.ast.", "");
@@ -45,6 +47,13 @@ public class Parser {
                 System.out.println("------------------ IR begin --------------------");
                 System.out.println(res);
                 System.out.println("------------------ IR end ----------------------");
+
+                BytecodeGenerator bg = new BytecodeGenerator(
+                        simpleName,
+                        new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS),
+                        null);
+                bg.generate((Namespace)ir, new LinkedList<>());
+                bg.writeClassFiles();
             }
             catch(ParseException ex) {
                 System.err.println(ex.getMessage());
@@ -53,6 +62,9 @@ public class Parser {
                 System.err.println(ex.getMessage());
             }
             catch(UnsupportedEncodingException ex) {
+                System.err.println(ex.getMessage());
+            }
+            catch (Exception ex) {
                 System.err.println(ex.getMessage());
             }
         }
@@ -71,6 +83,17 @@ public class Parser {
         this.debug = debug;
     }
 
+    public static String simpleNameOf(String fileName) throws Exception {
+        String regex = "(.*)\\.strm$";
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(fileName);
+        if (m.find()) {
+            return m.group(1);
+        }
+        else {
+            throw new Exception("file name error: " + fileName);
+        }
+    }
     public static NamespaceNode parseFile(File file) throws Exception {
         return newFileParser(file).program();
     }
