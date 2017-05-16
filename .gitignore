@@ -4,6 +4,7 @@
 *.jar
 *.strm
 *.yml
+.gradle
 testdata/
 dep/
 

@@ -1,0 +1,18 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'distribution'
+  id 'ca.coglinc.javacc' version '2.4.0'
+}
+
+mainClassName = ''
+applicationName = 'jetstreem'
+
+repositories {
+    mavenCentral()
+}
+
+compileJavacc {
+    include '**/*.java'
+}
+
