@@ -1,48 +1,53 @@
 package pw.koj.jetstreem.compiler.ir;
 
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class CondBranch {
-    private Object cond;
-    private List<Object> truePart;
-    private List<Object> falsePart;
+public class CondBranch implements IrNode {
+    private IrNode cond;
+    private List<IrNode> truePart;
+    private List<IrNode> falsePart;
 
     public CondBranch() {
         super();
     }
 
-    public CondBranch(Object cond, List<Object> truePart) {
+    public CondBranch(IrNode cond, List<IrNode> truePart) {
         this.cond = cond;
         this.truePart = truePart;
     }
 
-    public CondBranch(Object cond, List<Object> truePart, List<Object> falsePart) {
+    public CondBranch(IrNode cond, List<IrNode> truePart, List<IrNode> falsePart) {
         this(cond, truePart);
         this.falsePart = falsePart;
     }
 
-    public Object getCond() {
+    public IrNode getCond() {
         return cond;
     }
 
-    public void setCond(Object cond) {
+    public void setCond(IrNode cond) {
         this.cond = cond;
     }
 
-    public List<Object> getTruePart() {
+    public List<IrNode> getTruePart() {
         return truePart;
     }
 
-    public void setTruePart(List<Object> truePart) {
+    public void setTruePart(List<IrNode> truePart) {
         this.truePart = truePart;
     }
 
-    public List<Object> getFalsePart() {
+    public List<IrNode> getFalsePart() {
         return falsePart;
     }
 
-    public void setFalsePart(List<Object> falsePart) {
+    public void setFalsePart(List<IrNode> falsePart) {
         this.falsePart = falsePart;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

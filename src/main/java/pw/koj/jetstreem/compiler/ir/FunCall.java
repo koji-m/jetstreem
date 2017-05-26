@@ -1,15 +1,15 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import pw.koj.jetstreem.compiler.RefTable;
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class FunCall {
+public class FunCall implements IrNode {
     private String name;
     private RefTable refTable;
-    private List<Object> args;
+    private List<IrNode> args;
     private List<String> headers;
 
-    public FunCall(String name, RefTable refTable, List<Object> args, List<String> headers) {
+    public FunCall(String name, RefTable refTable, List<IrNode> args, List<String> headers) {
         this.name = name;
         this.refTable = refTable;
         this.args = args;
@@ -32,11 +32,11 @@ public class FunCall {
         this.refTable = refTable;
     }
 
-    public List<Object> getArgs() {
+    public List<IrNode> getArgs() {
         return args;
     }
 
-    public void setArgs(List<Object> args) {
+    public void setArgs(List<IrNode> args) {
         this.args = args;
     }
 
@@ -46,6 +46,10 @@ public class FunCall {
 
     public void setHeaders(List<String> headers) {
         this.headers = headers;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

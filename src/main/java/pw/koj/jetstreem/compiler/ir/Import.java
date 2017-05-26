@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class Import {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class Import implements IrNode {
     private Namespace ns;
 
     public Import(Namespace ns) {
@@ -13,6 +16,10 @@ public class Import {
 
     public void setNs(Namespace ns) {
         this.ns = ns;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

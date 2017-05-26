@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class DoubleConstant {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class DoubleConstant implements IrNode {
     private double value;
 
     public DoubleConstant(double value) {
@@ -13,6 +16,10 @@ public class DoubleConstant {
 
     public void setValue(double value) {
         this.value = value;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

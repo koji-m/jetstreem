@@ -22,5 +22,9 @@ public class PatternRefTable extends RefTable {
 
         return parent.resolveRef(name);
     }
+
+    public RefTable lookupRef(String name) {
+        return null;
+    }
 }
 

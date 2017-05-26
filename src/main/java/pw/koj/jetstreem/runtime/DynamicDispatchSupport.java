@@ -1,9 +1,12 @@
+package pw.koj.jetstreem.runtime;
+
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
+import pw.koj.jetstreem.runtime.type.*;
+
 import static java.lang.invoke.MethodType.methodType;
 
 public class DynamicDispatchSupport {
-    private static final Class TOPLEVEL = StrmTop.class;
 
     private static final MethodHandle FALLBACK;
     private static final MethodHandle FALLBACK_VOID;
@@ -112,7 +115,7 @@ public class DynamicDispatchSupport {
         MethodHandle mh = null;
         if (firstArg instanceof StrmObject) {
             StrmObject obj = (StrmObject)firstArg;
-            for (Class klass = obj.getClass(); klass != TOPLEVEL; klass = klass.getDeclaringClass()) {
+            for (Class klass = obj.getClass(); klass != null; klass = klass.getDeclaringClass()) {
                 try {
                     mh = callSite.lookup.findStaticGetter(
                         klass,
@@ -166,7 +169,28 @@ public class DynamicDispatchSupport {
                 return fallback(callSite, genfn.getName(), newArgs);
             }
             else {
-                throw new RuntimeException("no function found");
+                try {
+                    mh = callSite.lookup.findStaticGetter(
+                        StrmNamespace.class,
+                        name,
+                        StrmFunction.class);
+                    fn = mh.invoke();
+
+                    MethodHandle guard = GUARD.bindTo(firstArg);
+                    guard = MethodHandles.dropArguments(guard, 0, Object.class);
+
+                    MethodHandle invoker = INVOKER.bindTo((StrmFunction)fn)
+                                     .asCollector(Object[].class, callSite.type().parameterCount() - 1);
+                    invoker = MethodHandles.dropArguments(invoker, 0, Object.class);
+
+                    MethodHandle root = MethodHandles.guardWithTest(guard, invoker, callSite.fallback);
+                    callSite.setTarget(root);
+                    Object[] ar = new Object[args.length-1];
+                    System.arraycopy(args, 1, ar, 0, ar.length);
+                    return ((StrmFunction)fn).call(ar);
+                } catch (Throwable e) {
+                    throw new RuntimeException("no function found");
+                }
             }
         }
         else {

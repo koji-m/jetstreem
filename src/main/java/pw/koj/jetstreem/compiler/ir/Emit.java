@@ -1,24 +1,29 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import java.util.List;
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class Emit {
-    private List<Object> args;
+public class Emit implements IrNode {
+    private List<IrNode> args;
 
     public Emit() {
         super();
     }
 
-    public Emit(List<Object> args) {
+    public Emit(List<IrNode> args) {
         this.args = args;
     }
 
-    public List<Object> getArgs() {
+    public List<IrNode> getArgs() {
         return args;
     }
 
-    public void setArgs(List<Object> args) {
+    public void setArgs(List<IrNode> args) {
         this.args = args;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

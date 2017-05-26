@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 import java.io.PrintStream;
 
 public abstract class Node {
@@ -8,7 +9,7 @@ public abstract class Node {
     }
 
     public abstract Location location();
-    public abstract Object accept(Visitor visitor) throws CompileError;
+    public abstract IrNode accept(Visitor visitor) throws CompileError;
 /*
     public void dump() {
         dump(System.out);

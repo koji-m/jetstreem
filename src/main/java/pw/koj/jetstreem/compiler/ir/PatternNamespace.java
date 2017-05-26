@@ -1,8 +1,11 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class PatternNamespace {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class PatternNamespace implements IrNode {
     private String name;
-    private Object pattern;
+    private IrNode pattern;
 
     public String getName() {
         return name;
@@ -12,12 +15,16 @@ public class PatternNamespace {
         this.name = name;
     }
 
-    public Object getPattern() {
+    public IrNode getPattern() {
         return pattern;
     }
 
-    public void setPattern(Object pattern) {
+    public void setPattern(IrNode pattern) {
         this.pattern = pattern;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

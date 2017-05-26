@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class ReturnNode extends Node {
     protected ArrayNode args;
@@ -28,7 +29,7 @@ public class ReturnNode extends Node {
       //TBD
     }
     
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }
 }

@@ -16,14 +16,17 @@ package pw.koj.jetstreem.parser;
 
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.regex.*;
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
 import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 import org.ho.yaml.Yaml;
 
 
 public class Parser {
+/*
     public static void main(String[] args) throws Exception {
         NamespaceNode ast;
         for(String arg : args) {
@@ -48,9 +51,8 @@ public class Parser {
 
                 BytecodeGenerator bg = new BytecodeGenerator(
                         simpleName,
-                        new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS),
                         null);
-                bg.generate((Namespace)ir, new LinkedList<>());
+                bg.generate((Namespace)ir, new LinkedList());
                 bg.writeClassFiles();
             }
             catch(ParseException ex) {
@@ -67,6 +69,7 @@ public class Parser {
             }
         }
     }
+*/
 
     private String sourceName;
     private boolean debug;
@@ -81,6 +84,7 @@ public class Parser {
         this.debug = debug;
     }
 
+/*
     public static String simpleNameOf(String fileName) throws Exception {
         String regex = "(.*)\\.strm$";
         Pattern p = Pattern.compile(regex);
@@ -105,7 +109,7 @@ public class Parser {
                                         SOURCE_ENCODING));
           return new Parser(rdr, file.getName());
     }
-
+*/
     private IntegerLiteralNode integerNode(Location loc, String image, int radix) {
         long i = Long.parseLong(image, radix);
         return new IntegerLiteralNode(loc, IntegerTypeRef.intRef(), i);
@@ -383,7 +387,7 @@ TOKEN: {
  * Syntactic Analysis
  */
 
-NamespaceNode program():
+NamespaceNode program(String className):
 {
     List<Node> l;
 }
@@ -391,7 +395,7 @@ NamespaceNode program():
     l=topstmts() <EOF>
         {
             System.out.println("Syntax OK");
-            return new NamespaceNode("StrmTop", l);
+            return new NamespaceNode(className, l);
         }
 }
 
@@ -628,7 +632,7 @@ Node expr2():
 {
     l=expr3()
     (LOOKAHEAD(1) t=<OP_AMPER> r=expr3()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -641,7 +645,7 @@ Node expr3():
 {
     l=expr4()
     (LOOKAHEAD(1) t=<OP_BAR> r=expr4()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -654,7 +658,7 @@ Node expr4():
 {
     l=expr5()
     (LOOKAHEAD(1) t=<OP_OR> r=expr5()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -667,7 +671,7 @@ Node expr5():
 {
     l=expr6()
     (LOOKAHEAD(1) t=<OP_AND> r=expr6()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -680,7 +684,7 @@ Node expr6():
 {
     l=expr7()
     [LOOKAHEAD(1) (t=<OP_EQ> | t=<OP_NEQ>) r=expr7()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     ]
       { return l; }
 }
@@ -693,7 +697,7 @@ Node expr7():
 {
     l=expr8()
     (LOOKAHEAD(1) (t=<OP_LT> | t=<OP_LE> | t=<OP_GT> | t=<OP_GE>) r=expr8()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -706,7 +710,7 @@ Node expr8():
 {
     l=expr9()
     (LOOKAHEAD(1) (t=<OP_PLUS> | t=<OP_MINUS>) r=expr9()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -719,7 +723,7 @@ Node expr9():
 {
     l=expr10()
     (LOOKAHEAD(1) (t=<OP_MULT> | t=<OP_DIV> | t=<OP_MOD>) r=expr10()
-      { l = new BinaryOpNode(t.image, l, r); }
+      { l = new BinaryOpNode(t.image.trim(), l, r); }
     )*
       { return l; }
 }
@@ -842,11 +846,11 @@ Node block():
       LOOKAHEAD(2) t=<BEG_BRC> pl=case_body()
         ( <END_BRC>
             { return pl; }
-        | <ELSE> <OP_LAMBDA> s=stmts() <END_BRC>)
+        | <ELSE> <OP_LAMBDA> s=stmts() <END_BRC>
             {
               pl.setNext(new PatternLambdaNode(null, null, s, null));
               return pl;
-            }
+            })
     | LOOKAHEAD(<BEG_BRC> bparam()) t=<BEG_BRC> a=bparam() s=stmts() <END_BRC>
         { return createLambdaNode(location(t), a, s); }
     | t=<BEG_BRC> s=stmts() <END_BRC>

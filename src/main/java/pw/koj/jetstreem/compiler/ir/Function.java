@@ -1,26 +1,26 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import pw.koj.jetstreem.compiler.RefTable;
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class Function {
-    private List<Object> body;
+public class Function implements IrNode {
+    private List<IrNode> body;
     private RefTable refTable;
 
     public Function() {
         super();
     }
 
-    public Function(List<Object> body, RefTable refTable) {
+    public Function(List<IrNode> body, RefTable refTable) {
         this.body = body;
         this.refTable = refTable;
     }
 
-    public List<Object> getBody() {
+    public List<IrNode> getBody() {
         return body;
     }
 
-    public void setBody(List<Object> body) {
+    public void setBody(List<IrNode> body) {
         this.body = body;
     }
 
@@ -30,6 +30,10 @@ public class Function {
 
     public void setRefTable(RefTable refTable) {
         this.refTable = refTable;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

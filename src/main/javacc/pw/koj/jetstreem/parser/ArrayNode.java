@@ -1,7 +1,8 @@
 package pw.koj.jetstreem.parser;
 
-import pw.koj.jetstreem.compiler.*;
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class ArrayNode extends ExprNode {
     protected Location location;
@@ -91,7 +92,7 @@ public class ArrayNode extends ExprNode {
         data.add(0, n);
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }       
 }

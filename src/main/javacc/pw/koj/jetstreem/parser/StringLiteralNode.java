@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class StringLiteralNode extends LiteralNode {
     protected String value;
@@ -28,7 +29,7 @@ public class StringLiteralNode extends LiteralNode {
         // TBD
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }       
 }

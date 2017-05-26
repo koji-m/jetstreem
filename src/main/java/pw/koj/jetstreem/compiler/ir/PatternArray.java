@@ -1,52 +1,57 @@
 package pw.koj.jetstreem.compiler.ir;
 
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class PatternArray {
-    private List<Object> head;
-    private Object vvar;
-    private List<Object> tail;
+public class PatternArray implements IrNode {
+    private List<IrNode> head;
+    private IrNode vvar;
+    private List<IrNode> tail;
 
     public PatternArray() {
         this.head = new ArrayList<>();
     }
 
-    public PatternArray(Object head, Object vvar, Object tail) {
+    public PatternArray(IrNode head, IrNode vvar, IrNode tail) {
         if (head != null) {
-            this.head = (List<Object>)((ArrayList<Object>)((PatternArray)head).getHead()).clone();
+            this.head = (List<IrNode>)((ArrayList<IrNode>)((PatternArray)head).getHead()).clone();
         }
         this.vvar = vvar;
         if (tail != null) {
-            this.tail = (List<Object>)((ArrayList<Object>)((PatternArray)tail).getHead()).clone();
+            this.tail = (List<IrNode>)((ArrayList<IrNode>)((PatternArray)tail).getHead()).clone();
         }
     }
 
-    public List<Object> getHead() {
+    public List<IrNode> getHead() {
         return head;
     }
 
-    public void setHead(List<Object> head) {
+    public void setHead(List<IrNode> head) {
         this.head = head;
     }
 
-    public Object getVvar() {
+    public IrNode getVvar() {
         return vvar;
     }
 
-    public void setVvar(Object vvar) {
+    public void setVvar(IrNode vvar) {
         this.vvar = vvar;
     }
 
-    public List<Object> getTail() {
+    public List<IrNode> getTail() {
         return tail;
     }
 
-    public void setTail(List<Object> tail) {
+    public void setTail(List<IrNode> tail) {
         this.tail = tail;
     }
 
-    public void add(Object pattern) {
+    public void add(IrNode pattern) {
         head.add(pattern);
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

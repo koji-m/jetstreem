@@ -1,7 +1,8 @@
 package pw.koj.jetstreem.parser;
 
-import pw.koj.jetstreem.compiler.*;
 import java.util.LinkedList;
+import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class ArgsNode extends Node {
     protected LinkedList<IdentifierNode> args;
@@ -31,7 +32,7 @@ public class ArgsNode extends Node {
         return null;
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }
 }

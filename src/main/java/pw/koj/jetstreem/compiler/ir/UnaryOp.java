@@ -1,12 +1,27 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class UnaryOp {
-    private String op;
-    private Object expr;
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-    public UnaryOp(String op, Object expr) {
-        this.op = op;
+public class UnaryOp implements IrNode {
+    private String op;
+    private IrNode expr;
+
+    public UnaryOp(String op, IrNode expr) throws CompileError {
         this.expr = expr;
+
+        if (op.equals("-")) {
+            this.op = "opNegate";
+        }
+        else if (op.equals("!")) {
+            this.op = "opLogicalCompl";
+        }
+        else if (op.equals("~")) {
+            this.op = "opBitwiseCompl";
+        }
+        else {
+            throw new CompileError("invalid unary operator: " + op);
+        }
     }
 
     public String getOp() {
@@ -17,12 +32,16 @@ public class UnaryOp {
         this.op = op;
     }
 
-    public Object getExpr() {
+    public IrNode getExpr() {
         return expr;
     }
 
-    public void setExpr(Object expr) {
+    public void setExpr(IrNode expr) {
         this.expr = expr;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class DoubleLiteralNode extends NumberLiteralNode {
     protected double value;
@@ -18,7 +19,7 @@ public class DoubleLiteralNode extends NumberLiteralNode {
         // TBD
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }       
 }

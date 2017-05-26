@@ -1,7 +1,8 @@
 package pw.koj.jetstreem.parser;
 
-import pw.koj.jetstreem.compiler.*;
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class PatternArrayNode extends Node {
     protected List<Node> data;
@@ -34,7 +35,7 @@ public class PatternArrayNode extends Node {
       //TBD
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }       
 }

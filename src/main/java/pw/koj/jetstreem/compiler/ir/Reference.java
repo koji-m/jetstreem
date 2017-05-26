@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class Reference {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class Reference implements IrNode {
     private String name;
     private int index;
     private Reference ref;
@@ -37,6 +40,10 @@ public class Reference {
 
     public void setRef(Reference ref) {
         this.ref = ref;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

@@ -1,7 +1,8 @@
 package pw.koj.jetstreem.parser;
 
-import pw.koj.jetstreem.compiler.*;
 import java.util.List;
+import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class NamespaceNode extends Node {
     protected String name;
@@ -39,7 +40,7 @@ public class NamespaceNode extends Node {
       //TBD
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }
 }

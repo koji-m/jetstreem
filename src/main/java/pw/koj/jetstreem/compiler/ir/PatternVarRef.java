@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class PatternVarRef {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class PatternVarRef implements IrNode {
     int index;
 
     public PatternVarRef() {
@@ -17,6 +20,10 @@ public class PatternVarRef {
 
     public void setIndex(int index) {
         this.index = index;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

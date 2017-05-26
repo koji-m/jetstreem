@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class PatternBool {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class PatternBool implements IrNode {
     private boolean value;
 
     public PatternBool(boolean value) {
@@ -13,6 +16,10 @@ public class PatternBool {
 
     public void setValue(boolean value) {
         this.value = value;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

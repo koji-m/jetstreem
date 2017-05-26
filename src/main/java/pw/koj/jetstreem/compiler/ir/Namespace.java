@@ -1,11 +1,11 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import pw.koj.jetstreem.compiler.NsRefTable;
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class Namespace {
+public class Namespace implements IrNode {
     private String name;
-    private List<Object> stmts;
+    private List<IrNode> stmts;
     private NsRefTable refTable;
     private Namespace parent;
     private HashMap<String, Namespace> children;
@@ -14,7 +14,7 @@ public class Namespace {
         super();
     }
 
-    public Namespace(String name, List<Object> stmts, NsRefTable refTable, Namespace parent) {
+    public Namespace(String name, List<IrNode> stmts, NsRefTable refTable, Namespace parent) {
         this.name = name;
         this.stmts = stmts;
         this.refTable = refTable;
@@ -30,11 +30,11 @@ public class Namespace {
         this.name = name;
     }
 
-    public List<Object> getStmts() {
+    public List<IrNode> getStmts() {
         return stmts;
     }
 
-    public void setStmts(List<Object> stmts) {
+    public void setStmts(List<IrNode> stmts) {
         this.stmts = stmts;
     }
 
@@ -91,6 +91,10 @@ public class Namespace {
 
     public Namespace fork(String name) {
         return new Namespace(name, null, new NsRefTable(name), this);
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

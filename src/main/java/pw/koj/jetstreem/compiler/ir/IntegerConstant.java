@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class IntegerConstant {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class IntegerConstant implements IrNode {
     private long value;
 
     public IntegerConstant() {
@@ -17,6 +20,10 @@ public class IntegerConstant {
 
     public void setValue(long value) {
         this.value = value;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

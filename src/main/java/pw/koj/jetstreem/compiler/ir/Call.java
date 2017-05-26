@@ -1,19 +1,19 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import pw.koj.jetstreem.compiler.RefTable;
-import java.util.List;
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class Call {
+public class Call implements IrNode {
     private String name;
     private RefTable ref;
-    private List<Object> args;
+    private List<IrNode> args;
     private List<String> headers;
 
     public Call() {
         super();
     }
 
-    public Call(String name, RefTable ref, List<Object> args, List<String> headers) {
+    public Call(String name, RefTable ref, List<IrNode> args, List<String> headers) {
         this.name = name;
         this.ref = ref;
         this.args = args;
@@ -36,11 +36,11 @@ public class Call {
         this.ref = ref;
     }
 
-    public List<Object> getArgs() {
+    public List<IrNode> getArgs() {
         return args;
     }
 
-    public void setArgs(List<Object> args) {
+    public void setArgs(List<IrNode> args) {
         this.args = args;
     }
 
@@ -50,6 +50,20 @@ public class Call {
 
     public void setHeaders(List<String> headers) {
         this.headers = headers;
+    }
+
+    public String descriptor() {
+        String desc = "(Ljava/lang/Object;";
+
+        for (int i = 0; i < args.size(); i++) {
+            desc += "Ljava/lang/Object;";
+        }
+
+        return desc + ")Ljava/lang/Object;";
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

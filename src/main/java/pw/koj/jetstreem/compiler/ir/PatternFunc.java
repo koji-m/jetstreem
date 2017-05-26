@@ -1,8 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class PatternFunc {
+public class PatternFunc implements IrNode {
     private List<FuncArm> arms;
 
     public PatternFunc() {
@@ -19,6 +20,10 @@ public class PatternFunc {
 
     public void add(FuncArm arm) {
         arms.add(arm);
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

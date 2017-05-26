@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.parser;
 
 import pw.koj.jetstreem.compiler.*;
+import pw.koj.jetstreem.compiler.ir.*;
 
 public class TypeNode extends Node {
     TypeRef typeRef;
@@ -35,7 +36,7 @@ public class TypeNode extends Node {
         return typeRef == null ? null : typeRef.location();
     }
 
-    public Object accept(Visitor visitor) throws CompileError {
+    public IrNode accept(Visitor visitor) throws CompileError {
         return visitor.visit(this);
     }
 

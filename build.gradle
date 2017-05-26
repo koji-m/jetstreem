@@ -5,11 +5,16 @@ plugins {
   id 'ca.coglinc.javacc' version '2.4.0'
 }
 
-mainClassName = ''
+mainClassName = 'pw.koj.jetstreem.cli.Main'
 applicationName = 'jetstreem'
 
 repositories {
     mavenCentral()
+}
+
+dependencies {
+    compile 'org.ow2.asm:asm:5.2'
+    compile 'org.jyaml:jyaml:1.3'
 }
 
 compileJavacc {

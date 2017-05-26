@@ -1,10 +1,13 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class Pair {
-    private String key;
-    private Object value;
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-    public Pair(String key, Object value) {
+public class Pair implements IrNode {
+    private String key;
+    private IrNode value;
+
+    public Pair(String key, IrNode value) {
         this.key = key;
         this.value = value;
     }
@@ -17,12 +20,16 @@ public class Pair {
         this.key = key;
     }
 
-    public Object getValue() {
+    public IrNode getValue() {
         return value;
     }
 
-    public void setValue(Object value) {
+    public void setValue(IrNode value) {
         this.value = value;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

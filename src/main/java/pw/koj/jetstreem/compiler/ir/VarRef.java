@@ -1,8 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-import pw.koj.jetstreem.compiler.RefTable;
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class VarRef {
+public class VarRef implements IrNode {
     private String name;
     private RefTable refTable;
 
@@ -29,6 +30,10 @@ public class VarRef {
 
     public void setRefTable(RefTable refTable) {
         this.refTable = refTable;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

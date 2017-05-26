@@ -1,14 +1,17 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class Let {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class Let implements IrNode {
     private String name;
-    private Object expr;
+    private IrNode expr;
 
     public Let() {
         super();
     }
 
-    public Let(String name, Object expr) {
+    public Let(String name, IrNode expr) {
         this.name = name;
         this.expr = expr;
     }
@@ -21,12 +24,16 @@ public class Let {
         this.name = name;
     }
 
-    public Object getExpr() {
+    public IrNode getExpr() {
         return expr;
     }
 
-    public void setExpr(Object expr) {
+    public void setExpr(IrNode expr) {
         this.expr = expr;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

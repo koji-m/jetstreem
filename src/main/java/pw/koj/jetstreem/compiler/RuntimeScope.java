@@ -6,7 +6,7 @@ public class RuntimeScope {
 
     public RuntimeScope(RefTable refTable) {
         this.refTable = refTable;
-        hits.nSwitchPoints = 0;
+        this.nSwitchPoints = 0;
     }
 
     public RefTable refTable() {

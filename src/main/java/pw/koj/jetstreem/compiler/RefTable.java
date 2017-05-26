@@ -48,6 +48,10 @@ abstract public class RefTable {
         this.capturedRefs = capturedRefs;
     }
 
+    public RefTable getParent() {
+        return parent;
+    }
+
     public void setParent(RefTable parent) {
         this.parent = parent;
     }
@@ -71,6 +75,8 @@ abstract public class RefTable {
     }
 
     abstract public RefTable resolveRef(String name);
+
+    abstract public RefTable lookupRef(String name);
 
 }
 

@@ -1,7 +1,10 @@
 package pw.koj.jetstreem.compiler;
 
-import pw.koj.jetstreem.compiler.ir.*;
+import java.util.*;
+import java.io.*;
 import org.objectweb.asm.*;
+import pw.koj.jetstreem.compiler.ir.*;
+import pw.koj.jetstreem.runtime.type.*;
 
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
@@ -10,7 +13,9 @@ import static org.objectweb.asm.Opcodes.*;
 public class BytecodeGenerator {
 
     private static final String JOBJ = "java/lang/Object";
+    private static final String STRMNS = "pw/koj/jetstreem/runtime/type/StrmNamespace";
     private static final String TOBJ = "Ljava/lang/Object;";
+    private static final String TSTRMNS = "Lpw/koj/jetstreem/runtime/type/StrmNamespace";
     private static final int N_AUG = 1;
 
     private String simpleName;
@@ -20,11 +25,20 @@ public class BytecodeGenerator {
     private BytecodeGenerator outer;
     private List<BytecodeGenerator> innerBgs;
 
-    public BytecodeGenerator(String simpleName, ClassWriter cw, BytecodeGenerator outer) {
-        this.simpleName = simpleName;
-        this.cw = cw;
-        this.topLevel = outer.topLevel();
+    public BytecodeGenerator(BytecodeGenerator outer) {
+        this.cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
+        if (outer == null) {
+            this.topLevel = this;
+        }
+        else {
+            this.topLevel = outer.topLevel();
+        }
         this.outer = outer;
+    }
+
+    public BytecodeGenerator(String simpleName, BytecodeGenerator outer) {
+        this(outer);
+        this.simpleName = simpleName;
     }
 
     public String className() {
@@ -87,7 +101,7 @@ public class BytecodeGenerator {
         }
     }
 
-    public void writeClassFiles() {
+    public void writeClassFiles() throws Exception {
         FileOutputStream out = new FileOutputStream(new File(className() + ".class"));
         out.write(cw.toByteArray());
 
@@ -97,30 +111,28 @@ public class BytecodeGenerator {
         }
     }
 
-    public void generate(Namespace ns, Deque<RuntimeScope> ctx) {
+    public void generate(Namespace ns, Deque<RuntimeScope> ctx) throws Exception {
         this.simpleName = ns.getName();
         this.topLevel = this;
         this.innerBgs = new ArrayList<>();
 
-
-        cw = new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS);
-        cw.visit(V1_8, ACC_PUBLIC + ACC_SUPER, ns.getName(), null, JOBJ, null);
+        cw.visit(V1_8, ACC_PUBLIC + ACC_SUPER, ns.getName(), null, STRMNS, null);
 
         Map<String, Integer> refs = ns.getRefTable().getLocalRefs();
-        for (String name : refs) {
-            FieldVisitor fv = incw.visitField(ACC_STATIC, name, TOBJ, null, null);
+        for (String name : refs.keySet()) {
+            FieldVisitor fv = cw.visitField(ACC_STATIC, name, TOBJ, null, null);
             fv.visitEnd();
         }
 
-        RuntimeScope scope = new RuntimeScope(ns);
+        RuntimeScope scope = new RuntimeScope(ns.getRefTable());
         ctx.push(scope);
 
         String topMethodName = className() + "$define";
-        String topMethodDesc = "(L[java/lang/invoke/SwitchPoint;)V";
+        String topMethodDesc = "([Ljava/lang/invoke/SwitchPoint;)V";
 
         mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, topMethodName, topMethodDesc, null, null);
         mv.visitCode();
-        for (Object stmt : ns.getStmts()) {
+        for (IrNode stmt : ns.getStmts()) {
             stmt.accept(this, ctx);
         }
         mv.visitInsn(RETURN);
@@ -129,8 +141,12 @@ public class BytecodeGenerator {
 
         ctx.pop();
 
-        mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "(L[java/lang/String;)V", null, null);
+        mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
         mv.visitCode();
+
+        mv.visitInsn(ICONST_1);
+        mv.visitFieldInsn(PUTSTATIC, ns.getName(), "topp", "Z");
+
         mv.visitIntInsn(BIPUSH, scope.numOfSwp());
         mv.visitTypeInsn(ANEWARRAY, "java/lang/invoke/SwitchPoint");
         mv.visitMethodInsn(INVOKESTATIC, className(), topMethodName, topMethodDesc, false);
@@ -142,16 +158,15 @@ public class BytecodeGenerator {
 
     }
 
-    public void visit(Namespace ns, Deque<RuntimeScope> ctx) {
+    public void visit(Namespace ns, Deque<RuntimeScope> ctx) throws Exception {
         BytecodeGenerator inner = new BytecodeGenerator(
             ns.getName(),
-            new ClassWriter(COMPUTE_FRAMES | COMPUTE_MAXS),
             this);
         topLevel.innerBgs().add(inner);
 
 
         ClassWriter incw = inner.cw();
-        incw.visit(v1_8, ACC_SUPER, inner.className(), null, JOBJ, null);
+        incw.visit(V1_8, ACC_SUPER, inner.className(), null, STRMNS, null);
 
         for (BytecodeGenerator bg = inner; bg != topLevel; bg = bg.outer()) {
             incw.visitInnerClass(bg.className(), bg.outerName(), bg.innerName(), ACC_STATIC);
@@ -159,7 +174,7 @@ public class BytecodeGenerator {
         }
 
         Map<String, Integer> refs = ns.getRefTable().getLocalRefs();
-        for (String name : refs) {
+        for (String name : refs.keySet()) {
             FieldVisitor infv = incw.visitField(ACC_STATIC, name, TOBJ, null, null);
             infv.visitEnd();
         }
@@ -168,11 +183,11 @@ public class BytecodeGenerator {
         ctx.push(scope);
 
         String topMethodName = inner.className() + "$define";
-        String topMethodDesc = "(L[java/lang/invoke/SwitchPoint;)V";
+        String topMethodDesc = "([Ljava/lang/invoke/SwitchPoint;)V";
 
         MethodVisitor inmv = inner.mv(incw.visitMethod(ACC_PUBLIC + ACC_STATIC, topMethodName, topMethodDesc, null, null));
         inmv.visitCode();
-        for (Object stmt : ns.getStmts()) {
+        for (IrNode stmt : ns.getStmts()) {
             stmt.accept(inner, ctx);
         }
         inmv.visitInsn(RETURN);
@@ -189,7 +204,7 @@ public class BytecodeGenerator {
         mv.visitMethodInsn(INVOKESTATIC, inner.className(), topMethodName, topMethodDesc, false);
     }
 
-    public void visit(Let let, Deque<RuntimeScope> ctx) throws CompileError {
+    public void visit(Let let, Deque<RuntimeScope> ctx) throws Exception {
         String name = let.getName();
         RefTable ref = ctx.peek().refTable();
         RefTable target = ref.lookupRef(name);
@@ -210,7 +225,7 @@ public class BytecodeGenerator {
         }
     }
 
-    public void visit(BinaryOp binOp, Deque<RuntimeScope> ctx) {
+    public void visit(BinaryOp binOp, Deque<RuntimeScope> ctx) throws Exception {
         RuntimeScope scope = ctx.peek();
 
         mv.visitVarInsn(ALOAD, 0);
@@ -218,7 +233,7 @@ public class BytecodeGenerator {
         binOp.getRhs().accept(this, ctx);
         mv.visitInvokeDynamicInsn(
                 binOp.getOp(),
-                "(L[java/lang/invoke/SwitchPoint;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                "([Ljava/lang/invoke/SwitchPoint;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
                 new Handle(Opcodes.H_INVOKESTATIC,
                     "pw/koj/jetstreem/runtime/OpSupport",
                     "bootstrap",
@@ -230,9 +245,130 @@ public class BytecodeGenerator {
     public void visit(IntegerConstant intConst, Deque<RuntimeScope> ctx) {
         mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/type/StrmInteger");
         mv.visitInsn(DUP);
-        mv.visitLdcInsn(new Long(intConst.getLongValue()));
+        mv.visitLdcInsn(new Long(intConst.getValue()));
         mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/type/StrmInteger", "<init>", "(J)V", false);
     }
 
+    public void visit(BoolConstant bc, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Call c, Deque<RuntimeScope> ctx) throws Exception {
+        RefTable ref = c.getRef();
+        if (ref == null) {
+            mv.visitInsn(ACONST_NULL);
+        }
+        else {
+            //TBD stack fallback ref
+        }
+
+        for (IrNode arg : c.getArgs()) {
+            arg.accept(this, ctx);
+        }
+        
+        mv.visitInvokeDynamicInsn(
+                c.getName(),
+                c.descriptor(),
+                new Handle(Opcodes.H_INVOKESTATIC,
+                    "pw/koj/jetstreem/runtime/DynamicDispatchSupport",
+                    "bootstrap",
+                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                    false));
+    }
+
+    public void visit(CondBranch cb, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(DoubleConstant dc, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Emit em, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(FunCall fc, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(FuncArm fa, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Function f, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Block b, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(GenArray ga, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(GenericFunc gf, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Import im, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Nil n, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Pair p, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternArray pa, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternBool pb, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternDouble pd, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternFunc pf, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternInteger pi, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternNamespace pn, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternNil pn, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternString ps, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternStruct ps, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternVarBind pv, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(PatternVarRef pv, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Reference r, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Return r, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Skip s, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(Splat s, Deque<RuntimeScope> ctx) throws Exception {
+    }
+    
+    public void visit(StringConstant sc, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(TimeConstant tc, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(UnaryOp uo, Deque<RuntimeScope> ctx) throws Exception {
+    }
+
+    public void visit(VarRef vr, Deque<RuntimeScope> ctx) throws Exception {
+    }
 }
 

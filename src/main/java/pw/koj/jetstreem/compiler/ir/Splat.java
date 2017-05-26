@@ -1,18 +1,25 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class Splat {
-    private Object expr;
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-    public Splat(Object expr) {
+public class Splat implements IrNode {
+    private IrNode expr;
+
+    public Splat(IrNode expr) {
         this.expr = expr;
     }
 
-    public Object getExpr() {
+    public IrNode getExpr() {
         return expr;
     }
 
-    public void setExpr(Object expr) {
+    public void setExpr(IrNode expr) {
         this.expr = expr;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

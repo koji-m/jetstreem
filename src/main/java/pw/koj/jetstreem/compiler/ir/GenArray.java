@@ -1,9 +1,10 @@
 package pw.koj.jetstreem.compiler.ir;
 
 import java.util.*;
+import pw.koj.jetstreem.compiler.*;
 
-public class GenArray {
-    private List<Object> data;
+public class GenArray implements IrNode {
+    private List<IrNode> data;
     private List<String> headers;
     private String ns;
 
@@ -13,11 +14,11 @@ public class GenArray {
         this.headers = new ArrayList<>();
     }
 
-    public List<Object> getData() {
+    public List<IrNode> getData() {
         return data;
     }
 
-    public void setData(List<Object> data) {
+    public void setData(List<IrNode> data) {
         this.data = data;
     }
 
@@ -37,8 +38,12 @@ public class GenArray {
         this.ns = ns;
     }
 
-    public void add(Object expr) {
+    public void add(IrNode expr) {
         data.add(expr);
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 

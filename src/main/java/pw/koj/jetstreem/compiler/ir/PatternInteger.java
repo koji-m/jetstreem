@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler.ir;
 
-public class PatternInteger {
+import java.util.*;
+import pw.koj.jetstreem.compiler.*;
+
+public class PatternInteger implements IrNode {
     private long value;
 
     public PatternInteger(long value) {
@@ -13,6 +16,10 @@ public class PatternInteger {
 
     public void setValue(long value) {
         this.value = value;
+    }
+
+    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+        visitor.visit(this, ctx);
     }
 }
 
