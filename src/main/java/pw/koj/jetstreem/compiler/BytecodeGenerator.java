@@ -101,7 +101,7 @@ public class BytecodeGenerator {
         }
     }
 
-    public void writeClassFiles() throws Exception {
+    public String writeClassFiles() throws Exception {
         FileOutputStream out = new FileOutputStream(new File(className() + ".class"));
         out.write(cw.toByteArray());
 
@@ -109,6 +109,8 @@ public class BytecodeGenerator {
             out = new FileOutputStream(new File(g.className() + ".class"));
             out.write(g.cw().toByteArray());
         }
+
+        return className();
     }
 
     public void generate(Namespace ns, Deque<RuntimeScope> ctx) throws Exception {

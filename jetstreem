@@ -1,4 +1,0 @@
-#!/bin/sh
-
-java -cp .:../tmp/jyaml_test/jyaml-1.3.jar pw.koj.jetstreem.parser.Parser "$@"
-

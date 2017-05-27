@@ -394,7 +394,6 @@ NamespaceNode program(String className):
 {
     l=topstmts() <EOF>
         {
-            System.out.println("Syntax OK");
             return new NamespaceNode(className, l);
         }
 }
