@@ -40,7 +40,7 @@ public class FuncArm implements IrNode {
         this.body = body;
     }
 
-    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+    public void accept(BytecodeGenerator visitor, RuntimeContext<RuntimeScope> ctx) throws Exception {
         visitor.visit(this, ctx);
     }
 }

@@ -1,0 +1,8 @@
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.ow2.asm:asm:5.2'
+} 
+

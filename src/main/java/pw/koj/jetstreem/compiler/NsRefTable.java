@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler;
 
 import java.util.HashMap;
+import org.objectweb.asm.*;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public class NsRefTable extends RefTable {
     public NsRefTable() {
@@ -21,7 +24,6 @@ public class NsRefTable extends RefTable {
             return null;
         }
 
-        System.out.println("DEBUG:" + name);
         RefTable r = parent.resolveRef(name);
 
         if (r instanceof NsRefTable) {
@@ -50,6 +52,14 @@ public class NsRefTable extends RefTable {
         else {
             return null;
         }
+    }
+
+    public int tmpVarIndex() {
+        return nCaptured;
+    }
+
+    public void bcPushVarRef(String refName, MethodVisitor mv) throws CompileError {
+        mv.visitFieldInsn(GETSTATIC, fullName(), refName, "Ljava/lang/Object;");
     }
 
 }

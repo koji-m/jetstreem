@@ -2,6 +2,9 @@ package pw.koj.jetstreem.runtime;
 
 import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
+import io.reactivex.*;
+import io.reactivex.subscribers.DisposableSubscriber;
+import io.reactivex.disposables.Disposable;
 import pw.koj.jetstreem.runtime.type.*;
 
 import static java.lang.invoke.MethodType.methodType;
@@ -9,7 +12,8 @@ import static java.lang.invoke.MethodType.methodType;
 public class OpSupport {
 
     private static final MethodHandle UNARY_OP;
-    private static final MethodHandle BINARY_OP;
+    private static final MethodHandle BINARY_OP1;
+    private static final MethodHandle BINARY_OP2;
 
     static {
         try {
@@ -20,26 +24,15 @@ public class OpSupport {
                 "unaryOp",
                 methodType(Object.class, StrmCallSite.class, String.class, Integer.class, SwitchPoint[].class, Object.class));
 
-            BINARY_OP = lookup.findStatic(
+            BINARY_OP1 = lookup.findStatic(
                 OpSupport.class,
-                "binaryOp",
+                "binaryOp1",
                 methodType(Object.class, StrmCallSite.class, String.class, Integer.class, SwitchPoint[].class, Object.class, Object.class));
-/*
-            GUARD = lookup.findStatic(
-                DynamicDispatchSupport.class,
-                "guard",
-                methodType(boolean.class, Object.class, Object.class));
 
-            INVOKER = lookup.findStatic(
-                DynamicDispatchSupport.class,
-                "invoker",
-                methodType(Object.class, StrmFunction.class, Object[].class));
-
-            INVOKER_VOID = lookup.findStatic(
-                DynamicDispatchSupport.class,
-                "invoker",
-                methodType(Object.class, StrmFunctionVoid.class));
-                */
+            BINARY_OP2 = lookup.findStatic(
+                OpSupport.class,
+                "binaryOp2",
+                methodType(Object.class, StrmCallSite.class, String.class, Integer.class, SwitchPoint[].class, Object.class, Object.class));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("method handle initialization failed");
         }
@@ -52,17 +45,29 @@ public class OpSupport {
         StrmCallSite callSite = new StrmCallSite(caller, type);
         MethodHandle fallbackHandle;
         int nOperand = type.parameterCount();
-        if (nOperand == 1) {
+        if (nOperand == 2) {
             fallbackHandle = UNARY_OP.bindTo(callSite)
                                      .bindTo(name)
                                      .bindTo(idx)
                                      .asType(type);
         }
         else {
-            fallbackHandle = BINARY_OP.bindTo(callSite)
-                                      .bindTo(name)
-                                      .bindTo(idx)
-                                      .asType(type);
+            if (name.equals("opEq") || name.equals("opNeq") || name.equals("opLt") ||
+                    name.equals("opLe") || name.equals("opGt") || name.equals("opGe")) {
+                fallbackHandle = BINARY_OP1.bindTo(callSite)
+                                           .bindTo(name)
+                                           .bindTo(idx)
+                                           .asType(type);
+            }
+            else {
+                fallbackHandle = BINARY_OP2.bindTo(callSite)
+                                           .bindTo(name)
+                                           .bindTo(idx)
+                                           .asType(type);
+            }
+
+
+
         }
 
         callSite.fallback = fallbackHandle;
@@ -106,7 +111,63 @@ public class OpSupport {
         return mh.invokeExact(swps, operand);
     }
 
-    public static Object binaryOp(StrmCallSite callSite, String name, Integer idx, SwitchPoint[] swps, Object lhs, Object rhs) throws Throwable {
+    public static Object binaryOp1(StrmCallSite callSite, String name, Integer idx, SwitchPoint[] swps, Object lhs, Object rhs) throws Throwable {
+        MethodHandle mh = null;
+
+        MethodType type = MethodType.methodType(Object.class, Object.class);
+
+        if (lhs instanceof StrmInteger) {
+            if (rhs instanceof StrmInteger) {
+                mh = callSite.lookup.findVirtual(
+                        StrmInteger.class,
+                        name,
+                        MethodType.methodType(StrmBool.class, StrmInteger.class));
+            }
+            else if (rhs instanceof StrmFloat) {
+                mh = callSite.lookup.findVirtual(
+                        StrmInteger.class,
+                        name,
+                        MethodType.methodType(StrmBool.class, StrmFloat.class));
+            }
+        }
+        else if (lhs instanceof StrmFloat) {
+            if (rhs instanceof StrmInteger) {
+                mh = callSite.lookup.findVirtual(
+                        StrmFloat.class,
+                        name,
+                        MethodType.methodType(StrmBool.class, StrmInteger.class));
+            }
+            else if (rhs instanceof StrmFloat) {
+                mh = callSite.lookup.findVirtual(
+                        StrmFloat.class,
+                        name,
+                        MethodType.methodType(StrmBool.class, StrmFloat.class));
+            }
+        }
+        else if (lhs instanceof StrmString) {
+            if (rhs instanceof StrmString) {
+                mh = callSite.lookup.findVirtual(
+                        StrmString.class,
+                        name,
+                        MethodType.methodType(StrmBool.class, StrmString.class));
+            }
+        }
+        
+
+        if (mh == null)  {
+            throw new RuntimeException("binary operation error");
+        }
+
+        mh = MethodHandles.dropArguments(mh, 0, SwitchPoint[].class);
+        mh = mh.asType(callSite.type());
+        SwitchPoint swp = new SwitchPoint();
+        swps[idx.intValue()] = swp;
+        mh = swp.guardWithTest(mh, callSite.fallback);
+        callSite.setTarget(mh);
+        return mh.invokeExact(swps, lhs, rhs);
+    }
+
+    public static Object binaryOp2(StrmCallSite callSite, String name, Integer idx, SwitchPoint[] swps, Object lhs, Object rhs) throws Throwable {
         MethodHandle mh = null;
 
         MethodType type = MethodType.methodType(Object.class, Object.class);
@@ -140,10 +201,40 @@ public class OpSupport {
             }
         }
         else if (lhs instanceof StrmString) {
-            mh = callSite.lookup.findVirtual(
-                    StrmString.class,
-                    name,
-                    MethodType.methodType(StrmString.class, StrmString.class));
+            if (rhs instanceof StrmString) {
+                mh = callSite.lookup.findVirtual(
+                        StrmString.class,
+                        name,
+                        MethodType.methodType(StrmString.class, StrmString.class));
+            }
+        }
+        else if (lhs instanceof StrmProducer) {
+            if (rhs instanceof StrmFilter) {
+                mh = callSite.lookup.findVirtual(
+                        lhs.getClass(),
+                        name,
+                        MethodType.methodType(Flowable.class, StrmFilter.class));
+            }
+            else if (rhs instanceof StrmConsumer) {
+                mh = callSite.lookup.findVirtual(
+                        lhs.getClass(),
+                        name,
+                        MethodType.methodType(Disposable.class, StrmConsumer.class));
+            }
+        }
+        else if (lhs instanceof Flowable) {
+            if (rhs instanceof StrmFilter) {
+                mh = callSite.lookup.findStatic(
+                        StrmRuntimeUtil.class,
+                        name,
+                        MethodType.methodType(Flowable.class, Flowable.class, StrmFilter.class));
+            }
+            else if (rhs instanceof StrmConsumer) {
+                mh = callSite.lookup.findStatic(
+                        StrmRuntimeUtil.class,
+                        name,
+                        MethodType.methodType(Disposable.class, Flowable.class, StrmConsumer.class));
+            }
         }
 
         if (mh == null)  {

@@ -31,8 +31,34 @@ public class StrmInteger {
         return new StrmFloat((double)value + rhs.doubleValue());
     }
 
+    public StrmInteger opMod(StrmInteger rhs) {
+        return new StrmInteger(value % rhs.longValue());
+    }
+
+    public StrmFloat opMod(StrmFloat rhs) {
+        return new StrmFloat((double)value % rhs.doubleValue());
+    }
+
+    public StrmBool opEq(StrmInteger rhs) {
+        if (value == rhs.longValue()) {
+            return StrmBool.TRUE;
+        }
+        else {
+            return StrmBool.FALSE;
+        }
+    }
+
+    public StrmBool opEq(StrmFloat rhs) {
+        if ((double)value == rhs.doubleValue()) {
+            return StrmBool.TRUE;
+        }
+        else {
+            return StrmBool.FALSE;
+        }
+    }
+
     public String toString() {
-        return Long.toString(value);
+        return String.valueOf(value);
     }
 }
 

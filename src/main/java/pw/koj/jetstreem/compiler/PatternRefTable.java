@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.compiler;
 
 import java.util.*;
+import org.objectweb.asm.MethodVisitor;
 
 public class PatternRefTable extends RefTable {
 
@@ -25,6 +26,16 @@ public class PatternRefTable extends RefTable {
 
     public RefTable lookupRef(String name) {
         return null;
+    }
+
+    public int tmpVarIndex() {
+        return 0;
+    }
+
+    public void bcPushFallbackRef(String refName, MethodVisitor mv) throws CompileError {
+    }
+
+    public void bcPushVarRef(String refName, MethodVisitor mv) throws CompileError {
     }
 }
 

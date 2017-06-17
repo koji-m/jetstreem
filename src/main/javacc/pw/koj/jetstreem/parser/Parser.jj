@@ -26,50 +26,6 @@ import org.ho.yaml.Yaml;
 
 
 public class Parser {
-/*
-    public static void main(String[] args) throws Exception {
-        NamespaceNode ast;
-        for(String arg : args) {
-            try {
-                String simpleName = simpleNameOf(arg);
-
-                ast = parseFile(new File(arg));
-                String res = Yaml.dump(ast);
-                res = res.replaceAll("!pw.koj.jetstreem.parser.", "");
-                System.out.println("------------------ AST begin ------------------");
-                System.out.println(res);
-                System.out.println("------------------ AST end --------------------");
-                
-                AstToIrVisitor v = new AstToIrVisitor();
-                Object ir = v.transform(ast);
-                res = Yaml.dump(ir);
-                res = res.replaceAll("!pw.koj.jetstreem.compiler.ir.", "");
-                res = res.replaceAll("!pw.koj.jetstreem.compiler.", "");
-                System.out.println("------------------ IR begin --------------------");
-                System.out.println(res);
-                System.out.println("------------------ IR end ----------------------");
-
-                BytecodeGenerator bg = new BytecodeGenerator(
-                        simpleName,
-                        null);
-                bg.generate((Namespace)ir, new LinkedList());
-                bg.writeClassFiles();
-            }
-            catch(ParseException ex) {
-                System.err.println(ex.getMessage());
-            }
-            catch(FileNotFoundException ex) {
-                System.err.println(ex.getMessage());
-            }
-            catch(UnsupportedEncodingException ex) {
-                System.err.println(ex.getMessage());
-            }
-            catch (Exception ex) {
-                System.err.println(ex.getMessage());
-            }
-        }
-    }
-*/
 
     private String sourceName;
     private boolean debug;
@@ -84,32 +40,7 @@ public class Parser {
         this.debug = debug;
     }
 
-/*
-    public static String simpleNameOf(String fileName) throws Exception {
-        String regex = "(.*)\\.strm$";
-        Pattern p = Pattern.compile(regex);
-        Matcher m = p.matcher(fileName);
-        if (m.find()) {
-            return m.group(1);
-        }
-        else {
-            throw new Exception("file name error: " + fileName);
-        }
-    }
-    public static NamespaceNode parseFile(File file) throws Exception {
-        return newFileParser(file).program();
-    }
 
-    public static final String SOURCE_ENCODING = "UTF-8";
-
-    public static Parser newFileParser(File file) throws Exception {
-          BufferedReader rdr =
-              new BufferedReader(
-                  new InputStreamReader(new FileInputStream(file),
-                                        SOURCE_ENCODING));
-          return new Parser(rdr, file.getName());
-    }
-*/
     private IntegerLiteralNode integerNode(Location loc, String image, int radix) {
         long i = Long.parseLong(image, radix);
         return new IntegerLiteralNode(loc, IntegerTypeRef.intRef(), i);
@@ -219,7 +150,6 @@ public class Parser {
         if (args == null) {
             ar = new ArrayNode(loc);
         }
-        ar.withHeader();
         ar.setNs(ns);
         return ar;
     }
@@ -794,7 +724,7 @@ Node primary():
       | LOOKAHEAD(2) t=<BEG_BRK> <END_BRK> { n = new ArrayNode(location(t)); }
       | <BEG_BRK> ar=args() <END_BRK>
           {
-            n = ar.withHeader();
+            n = ar;
             ar = null;
           }
       | n=block()

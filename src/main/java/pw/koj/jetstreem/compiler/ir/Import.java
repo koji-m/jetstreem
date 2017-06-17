@@ -18,7 +18,7 @@ public class Import implements IrNode {
         this.ns = ns;
     }
 
-    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+    public void accept(BytecodeGenerator visitor, RuntimeContext<RuntimeScope> ctx) throws Exception {
         visitor.visit(this, ctx);
     }
 }

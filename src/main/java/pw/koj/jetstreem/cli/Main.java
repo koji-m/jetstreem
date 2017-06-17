@@ -128,7 +128,7 @@ public class Main {
 
     public static String generateClassFiles(Object ir) throws Exception {
         BytecodeGenerator g = new BytecodeGenerator(null);
-        g.generate((Namespace)ir, new LinkedList<>());
+        g.generate((Namespace)ir, new RuntimeContext<>());
         return g.writeClassFiles();
     }
 

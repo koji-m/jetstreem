@@ -1,3 +1,5 @@
+import generator.StrmMapOperatorGenerator
+
 plugins {
   id 'java'
   id 'application'
@@ -16,9 +18,20 @@ dependencies {
     compile 'org.ow2.asm:asm:5.2'
     compile 'org.jyaml:jyaml:1.3'
     compile 'com.beust:jcommander:1.69'
+    compile 'io.reactivex.rxjava2:rxjava:2.1.0'
+    compile files("$buildDir/classes/main/")
 }
 
 compileJavacc {
     include '**/*.java'
 }
+
+task genBuiltin {
+  doLast {
+    file("$buildDir/classes/main/pw/koj/jetstreem/runtime/type").mkdirs()
+    new StrmMapOperatorGenerator().generate("$buildDir/classes/main/pw/koj/jetstreem/runtime/type/")
+  }
+}
+
+compileJava.dependsOn genBuiltin
 

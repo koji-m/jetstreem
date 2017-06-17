@@ -1,10 +1,9 @@
 *~
 *.swp
 *.class
-*.jar
 *.strm
 *.yml
 .gradle
-testdata/
-dep/
+buildSrc/build/
+build/
 

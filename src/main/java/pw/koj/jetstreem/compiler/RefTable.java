@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.compiler;
 
 import pw.koj.jetstreem.parser.*;
+import org.objectweb.asm.MethodVisitor;
 import java.util.HashMap;
 
 abstract public class RefTable {
@@ -14,8 +15,8 @@ abstract public class RefTable {
     public RefTable() {
         localRefs = new HashMap<>();
         capturedRefs = new HashMap<>();
-        nLocals = 0;
-        nCaptured = 0;
+        nLocals = 1; //0 for implicit tmp var
+        nCaptured = 1; //0 for SwitchPoint[]
         parent = null;
     }
 
@@ -74,9 +75,26 @@ abstract public class RefTable {
         return localRefs.containsKey(name) || capturedRefs.containsKey(name);
     }
 
+    public String fullName() {
+        return buildNameFrom(parent) + name;
+    }
+
+    private static String buildNameFrom(RefTable ref) {
+        if (ref == null) {
+            return "";
+        }
+
+        return buildNameFrom(ref.getParent()) + ref.getName() + "$";
+    }
+
+
     abstract public RefTable resolveRef(String name);
 
     abstract public RefTable lookupRef(String name);
+
+    abstract public int tmpVarIndex();
+
+    abstract public void bcPushVarRef(String refName, MethodVisitor mv) throws CompileError;
 
 }
 

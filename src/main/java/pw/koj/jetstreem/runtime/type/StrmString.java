@@ -14,5 +14,9 @@ public class StrmString {
     public StrmString opPlus(StrmString rhs) {
         return new StrmString(value + rhs.stringValue());
     }
+
+    public String toString() {
+        return value;
+    }
 }
 

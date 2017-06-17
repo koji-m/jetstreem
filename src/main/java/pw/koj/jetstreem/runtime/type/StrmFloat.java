@@ -26,5 +26,9 @@ public class StrmFloat {
     public StrmFloat opPlus(StrmFloat rhs) {
         return new StrmFloat(value + rhs.doubleValue());
     }
+
+    public String toString() {
+        return String.valueOf(value);
+    }
 }
 

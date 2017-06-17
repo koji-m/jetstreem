@@ -70,18 +70,31 @@ public class ArrayNode extends ExprNode {
     }
 
     public ArrayNode withHeader() {
-        for(int i = 0; i < data.size(); i++) {
-          Node d = data.get(i);
-          if (d instanceof PairNode) {
-            if (headers == null) {
-              headers = new ArrayList<String>(data.size());
+        if (dataHasPair()) {
+            headers = new ArrayList<>();
+
+            for(int i = 0; i < data.size(); i++) {
+                Node d = data.get(i);
+                if (d instanceof PairNode) {
+                    PairNode pn = (PairNode)d;
+                    headers.add(pn.key());
+                    data.set(i, pn.value());
+                }
+                else {
+                    headers.add(null);
+                }
             }
-            PairNode pn = (PairNode)d;
-            headers.set(i, pn.key());
-            data.set(i, pn.value());
-          }
         }
         return this;
+    }
+
+    private boolean dataHasPair() {
+        for (Node n : data) {
+            if (n instanceof PairNode) {
+                return true;
+            }
+        }
+        return false;
     }
         
     public void add(Node n) {

@@ -50,7 +50,7 @@ public class PatternArray implements IrNode {
         head.add(pattern);
     }
 
-    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+    public void accept(BytecodeGenerator visitor, RuntimeContext<RuntimeScope> ctx) throws Exception {
         visitor.visit(this, ctx);
     }
 }

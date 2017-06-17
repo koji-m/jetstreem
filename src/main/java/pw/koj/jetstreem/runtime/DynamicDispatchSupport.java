@@ -12,7 +12,6 @@ public class DynamicDispatchSupport {
     private static final MethodHandle FALLBACK_VOID;
     private static final MethodHandle GUARD;
     private static final MethodHandle INVOKER;
-    private static final MethodHandle INVOKER_VOID;
 
     static {
         try {
@@ -25,8 +24,8 @@ public class DynamicDispatchSupport {
 
             FALLBACK_VOID = lookup.findStatic(
                 DynamicDispatchSupport.class,
-                "fallback",
-                methodType(Object.class, StrmCallSite.class, String.class, Object.class));
+                "fallbackVoid",
+                methodType(Object.class, StrmCallSite.class, String.class, Object[].class));
 
             GUARD = lookup.findStatic(
                 DynamicDispatchSupport.class,
@@ -38,10 +37,6 @@ public class DynamicDispatchSupport {
                 "invoker",
                 methodType(Object.class, StrmFunction.class, Object[].class));
 
-            INVOKER_VOID = lookup.findStatic(
-                DynamicDispatchSupport.class,
-                "invoker",
-                methodType(Object.class, StrmFunctionVoid.class));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("method handle initialization failed");
         }
@@ -53,9 +48,10 @@ public class DynamicDispatchSupport {
         StrmCallSite callSite = new StrmCallSite(caller, type);
         MethodHandle fallbackHandle;
         int nArgs = type.parameterCount();
-        if (nArgs == 1) {
+        if (nArgs == 2) {
             fallbackHandle = FALLBACK_VOID.bindTo(callSite)
                                           .bindTo(name)
+                                          .asCollector(Object[].class, nArgs)
                                           .asType(type);
         }
         else {
@@ -77,30 +73,32 @@ public class DynamicDispatchSupport {
     }
 
     public static Object invoker(StrmFunction fn, Object[] args) {
-        System.out.println("invoker called");
         return fn.call(args);
     }
 
-    public static Object invoker(StrmFunctionVoid fn) {
-        return fn.call();
-    }
 
-    public static Object fallback(StrmCallSite callSite, String name, Object fallbackRef) {
-        if (callSite.fallbackFuncVoid != null) {
-            return callSite.fallbackFuncVoid.call();
+    public static Object fallbackVoid(StrmCallSite callSite, String name, Object[] args) {
+        Object fallbackRef = args[0];
+        Object subscriber = args[1];
+        if (callSite.fallbackFunc != null) {
+            Object[] ar = new Object[]{subscriber};
+            return callSite.fallbackFunc.call(ar);
         }
-        else if (fallbackRef instanceof StrmFunctionVoid) {
-            MethodHandle invoker = INVOKER_VOID.bindTo((StrmFunctionVoid)fallbackRef);
+        else if (fallbackRef instanceof StrmFunction) {
+            MethodHandle invoker = INVOKER.bindTo((StrmFunction)fallbackRef)
+                .asCollector(Object[].class, 1);
             invoker = MethodHandles.dropArguments(invoker, 0, Object.class);
             callSite.setTarget(invoker);
-            callSite.fallbackFuncVoid = (StrmFunctionVoid)fallbackRef;
-            return ((StrmFunctionVoid)fallbackRef).call();
+            callSite.fallbackFunc = (StrmFunction)fallbackRef;
+            Object[] ar = new Object[]{subscriber};
+            return ((StrmFunction)fallbackRef).call(ar);
         }
         else if (fallbackRef instanceof GenericFunction) {
             GenericFunction genfn = (GenericFunction)fallbackRef;
-            Object[] newArgs = new Object[1];
+            Object[] newArgs = new Object[2];
             newArgs[0] = genfn.getFallbackRef();
-            return fallback(callSite, genfn.getName(), newArgs);
+            newArgs[1] = subscriber;
+            return fallbackVoid(callSite, genfn.getName(), newArgs);
         }
         else {
             throw new RuntimeException("no function found");
@@ -109,12 +107,13 @@ public class DynamicDispatchSupport {
 
     public static Object fallback(StrmCallSite callSite, String name, Object[] args) {
         Object fallbackRef = args[0];
-        Object firstArg = args[1];
+        //arg[1] is subscriber
+        Object firstArg = args[2];
         Object fn = null;
         
         MethodHandle mh = null;
-        if (firstArg instanceof StrmObject) {
-            StrmObject obj = (StrmObject)firstArg;
+        if (firstArg instanceof StrmNamespace) {
+            StrmNamespace obj = (StrmNamespace)firstArg;
             for (Class klass = obj.getClass(); klass != null; klass = klass.getDeclaringClass()) {
                 try {
                     mh = callSite.lookup.findStaticGetter(

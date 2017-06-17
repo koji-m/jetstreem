@@ -8,10 +8,19 @@ import pw.koj.jetstreem.compiler.ir.*;
 public class AstToIrVisitor implements Visitor {
 
     // dummy standard lib symbols
-    private static final String[] STDLIB = {
+    private static final String[] BUILTIN = {
         "stdin", "stdout", "seq", "map", "each", "filter",
-        "tcp_server", "tcp_socket", "chan"//, "print"
+        "tcp_server", "tcp_socket", "chan", "print" 
     };
+
+    private static RefTable builtIn;
+
+    static {
+        builtIn = new NsRefTable("pw/koj/jetstreem/runtime/BuiltIn");
+        for (String s : BUILTIN) {
+            builtIn.addLocal(s);
+        }
+    }
 
     private Context ctx;
     private ArrayList<String> pvs;
@@ -30,10 +39,7 @@ public class AstToIrVisitor implements Visitor {
         Namespace currentNs = ctx.peekNsStack();
         Namespace ns;
         if (currentNs == null) {
-            // import dummy standard lib symbols
-            for (String s : STDLIB) {
-                refTable.addLocal(s);
-            }
+            
             ns = new Namespace(nsName, stmts, refTable, null);
         }
         else if (currentNs.hasChild(nsName)) {
@@ -134,7 +140,10 @@ public class AstToIrVisitor implements Visitor {
         String name = id.getName();
         RefTable ref = current.resolveRef(name);
         if (ref == null) {
-            throw new CompileError("variable not defined");
+            ref = builtIn.resolveRef(name);
+            if (ref == null) {
+                throw new CompileError("variable not defined");
+            }
         }
 
         return new VarRef(name, ref);
@@ -147,7 +156,16 @@ public class AstToIrVisitor implements Visitor {
             ar.add(expr.accept(this));
         }
         ar.setHeaders(arr.getHeaders());
-        ar.setNs(arr.getNs());
+
+        String nsName = arr.getNs();
+        if (nsName != null) {
+            Namespace currentNs = ctx.peekNsStack();
+            Namespace ns = currentNs.lookupNs(nsName);
+            if (ns == null) {
+                throw new CompileError("namespace not found");
+            }
+            ar.setNs(ns);
+        }
         return ar;
     }
 
@@ -162,30 +180,14 @@ public class AstToIrVisitor implements Visitor {
     public IrNode visit(IfNode ifn) throws CompileError {
         IrNode cond = ifn.getCond().accept(this);
 
-        List<IrNode> truePart;
-        IrNode thenBody = ifn.getThenBody().accept(this);
-        if (thenBody instanceof List) {
-            truePart = (List<IrNode>)thenBody;
-        }
-        else {
-            truePart = new LinkedList<>();
-            truePart.add(thenBody);
-        }
+        IrNode truePart = ifn.getThenBody().accept(this);
 
         Node els = ifn.getElseBody();
         if (els == null) {
             return new CondBranch(cond, truePart);
         }
 
-        List<IrNode> falsePart;
-        IrNode elseBody = els.accept(this);
-        if (elseBody instanceof List) {
-            falsePart = (List<IrNode>)elseBody;
-        }
-        else {
-            falsePart = new LinkedList<>();
-            falsePart.add(elseBody);
-        }
+        IrNode falsePart = els.accept(this);
 
         return new CondBranch(cond, truePart, falsePart);
     }
@@ -208,6 +210,9 @@ public class AstToIrVisitor implements Visitor {
         RefTable current = ctx.peekRefTableStack();
         String name = call.getIdentifier().getName();
         RefTable ref = current.resolveRef(name);
+        if (ref == null) {
+            ref = builtIn.resolveRef(name);
+        }
 
         ArrayNode ar = call.getArgs();
         List<Node> data = ar.getData();
@@ -247,6 +252,9 @@ public class AstToIrVisitor implements Visitor {
         RefTable current = ctx.peekRefTableStack();
         String name = genf.getIdentifier().getName();
         RefTable ref = current.resolveRef(name);
+        if (ref == null) {
+            ref = builtIn.resolveRef(name);
+        }
 
         return new GenericFunc(name, ref);
     }

@@ -1,53 +1,46 @@
-# JetStreem
+# jetstreem
 
-This is inspired by https://github.com/matz/streem
-(and by Takao Oosawa)
+Implementation of streem language running on JVM. (currently using RxJava)
 
-YAPC Asia 2015 gave me motive.
+This is inspired by streem(https://github.com/matz/streem).
 
-## Sample Code of Streem lang
 
-```
-seq(100) | {x ->
-  if x % 15 == 0 {
-    "FizzBuzz"
-  }
-  else if x % 3 == 0 {
-    "Fizz"
-  }
-  else if x % 5 == 0 {
-    "Buzz"
-  }
-  else {
-    x
-  }
-} | STDOUT
-```
 ## Installation
 
-To build parser,
+To build,
 ```
-make
+./gradlew assemleDist
 ```
 
-To build core,
+(to put distribution on the appropriate place and unatar.)
 ```
-make core
-```
-core operates same as following code.
-```
-stdin | to_upper() | stdout
+cp build/distribution/jetstreem.tar {target dir}
+cd {target dir}; tar xf jetstreem.tar
 ```
 
 ## Usage
 
-To check syntax,
+To run,
 ```
-./jetstreem hoge.strm
+bin/jetstreem {streem script}
 ```
 
-To test core (operates described above),
+To check AST,
 ```
-cat some_text_file | java pw/koj/jetstreem/Main
+bin/jetstreem -d ast {streem script}
 ```
+
+To check AST and IR,
+```
+bin/jetstreem -d ir {streem script}
+```
+
+For help,
+```
+bin/jetstreem -h
+```
+
+## Current status
+
+Please check wiki(https://github.com/koji-m/jetstreem/wiki).
 

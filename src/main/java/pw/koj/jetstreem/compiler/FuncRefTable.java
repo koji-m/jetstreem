@@ -1,6 +1,9 @@
 package pw.koj.jetstreem.compiler;
 
 import java.util.HashMap;
+import org.objectweb.asm.MethodVisitor;
+
+import static org.objectweb.asm.Opcodes.*;
 
 public class FuncRefTable extends RefTable {
     private HashMap<String, Integer> argRefs;
@@ -9,7 +12,7 @@ public class FuncRefTable extends RefTable {
     public FuncRefTable() {
         super();
         argRefs = new HashMap<>();
-        nArgs = 0;
+        nArgs = 1; //0 for subscriber
     }
 
     public HashMap<String, Integer> getArgRefs() {
@@ -26,7 +29,15 @@ public class FuncRefTable extends RefTable {
     }
 
     public boolean hasLocal(String name) {
-        return super.hasLocal(name) || argRefs.containsKey(name);
+        return isLocalVar(name) || isArgVar(name);
+    }
+
+    public boolean isLocalVar(String name) {
+        return super.hasLocal(name);
+    }
+
+    public boolean isArgVar(String name) {
+        return argRefs.containsKey(name);
     }
 
     public RefTable resolveRef(String name) {
@@ -73,7 +84,7 @@ public class FuncRefTable extends RefTable {
         }
     }
 
-    public int indexOf(String name) throws CompileError {
+    public int localIndexOf(String name) throws CompileError {
         Integer idx = capturedRefs.get(name);
         if (idx != null) {
             return idx.intValue();
@@ -86,10 +97,39 @@ public class FuncRefTable extends RefTable {
 
         idx = localRefs.get(name);
         if (idx != null) {
-            return nCaptured + nArgs + idx.intValue();
+            return nCaptured + 1 + idx.intValue();
         }
 
         throw new CompileError("local variable not found");
+    }
+
+    
+
+    public int argIndexOf(String name) throws CompileError {
+        Integer idx = argRefs.get(name);
+        if (idx != null) {
+            return idx;
+        }
+
+        throw new CompileError("local variable not foud");
+    }
+
+    public int tmpVarIndex() {
+        return nCaptured + 1;
+    }
+
+    public void bcPushVarRef(String refName, MethodVisitor mv) throws CompileError {
+        if (isLocalVar(refName)) {
+            mv.visitVarInsn(ALOAD, localIndexOf(refName));
+        }
+        else if (isArgVar(refName)) {
+            mv.visitVarInsn(ALOAD, nCaptured);
+            mv.visitIntInsn(BIPUSH, argIndexOf(refName));
+            mv.visitInsn(AALOAD);
+        }
+        else {
+            throw new CompileError("reference not found");
+        }
     }
 
 }

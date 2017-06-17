@@ -6,7 +6,7 @@ import pw.koj.jetstreem.compiler.*;
 public class GenArray implements IrNode {
     private List<IrNode> data;
     private List<String> headers;
-    private String ns;
+    private Namespace ns;
 
 
     public GenArray() {
@@ -30,19 +30,23 @@ public class GenArray implements IrNode {
         this.headers = headers;
     }
 
-    public String getNs() {
+    public Namespace getNs() {
         return ns;
     }
 
-    public void setNs(String ns) {
+    public void setNs(Namespace ns) {
         this.ns = ns;
+    }
+
+    public int length() {
+        return data.size();
     }
 
     public void add(IrNode expr) {
         data.add(expr);
     }
 
-    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+    public void accept(BytecodeGenerator visitor, RuntimeContext<RuntimeScope> ctx) throws Exception {
         visitor.visit(this, ctx);
     }
 }

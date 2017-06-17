@@ -6,11 +6,22 @@ import pw.koj.jetstreem.compiler.*;
 public class Block implements IrNode {
     private List<IrNode> stmts;
 
+    public Block() {
+    }
+
     public Block(List<IrNode> stmts) {
         this.stmts = stmts;
     }
 
-    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+    public List<IrNode> getStmts() {
+        return stmts;
+    }
+
+    public void setStmts(List<IrNode> stmts) {
+        this.stmts = stmts;
+    }
+
+    public void accept(BytecodeGenerator visitor, RuntimeContext<RuntimeScope> ctx) throws Exception {
         visitor.visit(this, ctx);
     }
 }

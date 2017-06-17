@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.compiler.ir;
 
 import java.util.*;
+import org.objectweb.asm.MethodVisitor;
 import pw.koj.jetstreem.compiler.*;
 
 public class VarRef implements IrNode {
@@ -32,7 +33,11 @@ public class VarRef implements IrNode {
         this.refTable = refTable;
     }
 
-    public void accept(BytecodeGenerator visitor, Deque<RuntimeScope> ctx) throws Exception {
+    public void bcPushVarVal(MethodVisitor mv) throws CompileError {
+        refTable.bcPushVarRef(name, mv);
+    }
+
+    public void accept(BytecodeGenerator visitor, RuntimeContext<RuntimeScope> ctx) throws Exception {
         visitor.visit(this, ctx);
     }
 }
