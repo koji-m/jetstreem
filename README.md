@@ -12,7 +12,7 @@ To build,
 ./gradlew assemleDist
 ```
 
-(to put distribution on the appropriate place and unatar.)
+(to put distribution on the appropriate place and untar.)
 ```
 cp build/distribution/jetstreem.tar {target dir}
 cd {target dir}; tar xf jetstreem.tar
