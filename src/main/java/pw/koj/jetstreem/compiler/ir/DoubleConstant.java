@@ -6,6 +6,8 @@ import pw.koj.jetstreem.compiler.*;
 public class DoubleConstant implements IrNode {
     private double value;
 
+    public DoubleConstant() {}
+
     public DoubleConstant(double value) {
         this.value = value;
     }

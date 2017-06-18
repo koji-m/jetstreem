@@ -6,6 +6,8 @@ import pw.koj.jetstreem.compiler.ir.*;
 public class DoubleLiteralNode extends NumberLiteralNode {
     protected double value;
 
+    public DoubleLiteralNode() {}
+
     public DoubleLiteralNode(Location loc, TypeRef ref, double value) {
         super(loc, ref);
         this.value = value;

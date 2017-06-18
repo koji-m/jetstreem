@@ -434,6 +434,12 @@ public class BytecodeGenerator {
     }
 
     public void visit(DoubleConstant dc, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/type/StrmFloat");
+        mv.visitInsn(DUP);
+        mv.visitLdcInsn(new Double(dc.getValue()));
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/type/StrmFloat", "<init>", "(D)V", false);
+
+        popIfNeeded(ctx);
     }
 
     public void visit(Emit em, RuntimeContext<RuntimeScope> ctx) throws Exception {
