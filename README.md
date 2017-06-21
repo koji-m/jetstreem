@@ -9,35 +9,34 @@ This is inspired by streem(https://github.com/matz/streem).
 
 To build,
 ```
-./gradlew assemleDist
-```
-
-(to put distribution on the appropriate place and untar.)
-```
-cp build/distribution/jetstreem.tar {target dir}
-cd {target dir}; tar xf jetstreem.tar
+./gradlew installDist
 ```
 
 ## Usage
 
+Go to the bin directory,
+```
+cd build/install/jetstreem/bin 
+```
+
 To run,
 ```
-bin/jetstreem {streem script}
+./jetstreem {streem script}
 ```
 
 To check AST,
 ```
-bin/jetstreem -d ast {streem script}
+./jetstreem -d ast {streem script}
 ```
 
 To check AST and IR,
 ```
-bin/jetstreem -d ir {streem script}
+./jetstreem -d ir {streem script}
 ```
 
 For help,
 ```
-bin/jetstreem -h
+./jetstreem -h
 ```
 
 ## Current status
