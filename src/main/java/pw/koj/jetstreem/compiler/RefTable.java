@@ -49,6 +49,10 @@ abstract public class RefTable {
         this.capturedRefs = capturedRefs;
     }
 
+    public int getNCaptured() {
+        return nCaptured;
+    }
+
     public RefTable getParent() {
         return parent;
     }

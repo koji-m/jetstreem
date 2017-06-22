@@ -461,7 +461,14 @@ public class BytecodeGenerator {
         ctx.push(scope);
 
         String methodName = "lambda$define$" + nextFuncIndex();
-        String methodDesc = "([Ljava/lang/invoke/SwitchPoint;[Ljava/lang/Object;)Ljava/lang/Object;";
+        StringBuilder bldr = new StringBuilder("([Ljava/lang/invoke/SwitchPoint;");
+        HashMap<String, Integer> capRefs = refTbl.getCapturedRefs();
+        int nCaptured = capRefs.size();
+        for (int i = 0; i < nCaptured; i++) {
+            bldr.append("Ljava/lang/Object;");
+        }
+        String partialDesc = bldr.toString();
+        String methodDesc = bldr.append("[Ljava/lang/Object;)Ljava/lang/Object;").toString();
 
         mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, methodName, methodDesc, null, null);
         mv.visitCode();
@@ -495,9 +502,26 @@ public class BytecodeGenerator {
         mv = orgMv;
         mv.visitIntInsn(BIPUSH, scope.numOfSwp());
         mv.visitTypeInsn(ANEWARRAY, "java/lang/invoke/SwitchPoint");
+        String[] caps = new String[nCaptured];
+        for (String s : capRefs.keySet()) {
+            caps[capRefs.get(s) - 1] = s;
+        }
+        RefTable parent = refTbl.getParent();
+        for (String s : caps) {
+            RefTable r = parent.lookupRef(s);
+            if (r instanceof FuncRefTable) {
+                int lidx = ((FuncRefTable)r).localIndexOf(s);
+                mv.visitVarInsn(ALOAD, lidx);
+            }
+            else {
+                throw new CompileError("capture var compile error");
+            }
+        }
+
+        String lambdaDesc = partialDesc + ")Lpw/koj/jetstreem/runtime/type/StrmFunction;";
         mv.visitInvokeDynamicInsn(
                 "call",
-                "([Ljava/lang/invoke/SwitchPoint;)Lpw/koj/jetstreem/runtime/type/StrmFunction;",
+                lambdaDesc,
                 new Handle(
                     Opcodes.H_INVOKESTATIC,
                     "java/lang/invoke/LambdaMetafactory",
