@@ -73,14 +73,14 @@ public class AstToIrVisitor implements Visitor {
     }
 
     public IrNode visit(LetNode let) throws CompileError {
-        IrNode rhs = let.getRhs().accept(this);
-
         RefTable refTable = ctx.peekRefTableStack();
         String name = ((IdentifierNode)let.getLhs()).getName();
         if (refTable.hasLocal(name)) {
             throw new CompileError("duplicate assignment: " + name);
         }
         refTable.addLocal(name);
+
+        IrNode rhs = let.getRhs().accept(this);
 
         return new Let(name, rhs);
    }

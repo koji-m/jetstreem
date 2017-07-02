@@ -911,6 +911,12 @@ public class BytecodeGenerator {
     }
 
     public void visit(PatternVlenVarBind pv, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/matcher/VarBindMatcher");
+        mv.visitInsn(DUP);
+        mv.visitLdcInsn(new Integer(pv.getIndex()));
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/matcher/VarBindMatcher", "<init>", "(I)V", false);
+
+        popIfNeeded(ctx);
     }
 
     public void visit(RuntimeContext<RuntimeScope> ctx) throws Exception {

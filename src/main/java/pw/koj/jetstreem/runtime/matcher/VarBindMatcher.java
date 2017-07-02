@@ -8,6 +8,10 @@ public class VarBindMatcher implements PatternMatcher {
     }
 
     public boolean match(Object target, Object[] binds) {
+        if (index < 0) {
+            return true;
+        }
+
         binds[index] = target;
 
         return true;

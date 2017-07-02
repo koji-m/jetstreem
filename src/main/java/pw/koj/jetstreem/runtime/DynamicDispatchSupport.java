@@ -131,7 +131,6 @@ public class DynamicDispatchSupport {
                         fn = mh.invoke();
                         break;
                     } catch (Throwable e2) {
-                        System.out.println("lookup next");
                         //TBD
                     }
                 }
