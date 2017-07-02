@@ -34,6 +34,7 @@ public interface Visitor {
     IrNode visit(PatternStructNode node) throws CompileError;
     IrNode visit(PatternNamespaceNode node) throws CompileError;
     IrNode visit(PatternVarNode node) throws CompileError;
+    IrNode visit(PatternVlenVarNode node) throws CompileError;
     IrNode visit(PatternNumberNode node) throws CompileError;
     IrNode visit(PatternStringNode node) throws CompileError;
     IrNode visit(PatternNilNode node) throws CompileError;

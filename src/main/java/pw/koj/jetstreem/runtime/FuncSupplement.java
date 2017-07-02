@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.runtime;
 
 import java.lang.invoke.SwitchPoint;
+import pw.koj.jetstreem.runtime.matcher.PatternMatcher;
 
 public class FuncSupplement {
     public SwitchPoint[] swps;

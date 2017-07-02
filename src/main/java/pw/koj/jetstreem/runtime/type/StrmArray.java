@@ -26,6 +26,18 @@ public class StrmArray implements StrmProducer {
             .add(Flowable.fromArray(array).subscribeWith(rhs.subscriber()));
     }
 
+    public Object[] vals() {
+        return array;
+    }
+
+    public StrmString[] headers() {
+        return headers;
+    }
+
+    public boolean hasHeader() {
+        return headers != null;
+    }
+
     public String toString() {
         if (headers == null) {
             return Arrays.toString(array);

@@ -171,6 +171,15 @@ public class StrmInteger {
         }
     }
 
+    public boolean equals(Object obj) {
+        if (obj instanceof StrmInteger) {
+            return value == ((StrmInteger)obj).longValue();
+        }
+        else {
+            return false;
+        }
+    }
+
     public String toString() {
         return String.valueOf(value);
     }

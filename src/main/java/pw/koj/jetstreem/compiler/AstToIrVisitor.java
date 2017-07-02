@@ -24,6 +24,7 @@ public class AstToIrVisitor implements Visitor {
 
     private Context ctx;
     private ArrayList<String> pvs;
+    private int vlvarIndex;
     
     // Entry point
     public IrNode transform(NamespaceNode ast) throws CompileError {
@@ -275,42 +276,52 @@ public class AstToIrVisitor implements Visitor {
     }
 
     public IrNode visit(PatternLambdaNode plambda) throws CompileError {
-        PatternFunc pf = new PatternFunc();
+        List<PatternLambdaNode> plst = new ArrayList<>();
+        int nArms = 0;
+        for (PatternLambdaNode p = plambda; p != null; p = p.getNext()) {
+            plst.add(p);
+            nArms++;
+        }
 
-        for (PatternLambdaNode pl = plambda; pl != null; pl = pl.getNext()) {
+        PatternFuncRefTable refTable = new PatternFuncRefTable(nArms);
+        PatternFunc pf = new PatternFunc(refTable);
+
+        ctx.enterScopeTo(refTable);
+
+        int idx = 0;
+        for (PatternLambdaNode pl : plst) {
             pvs = new ArrayList<>();
+            vlvarIndex = -1;
             FuncArm arm = new FuncArm(pl.getPattern().accept(this));
 
-            if (pl.getCondition() != null) {
-                ctx.enterScopeTo(new PatternRefTable(pvs));
-                arm.setCondition(pl.getCondition().accept(this));
-                ctx.exitScope();
-            }
-
-            FuncRefTable refTable = new FuncRefTable();
+            refTable.switchToNewLocalRefs(idx++);
             for (String arg : pvs) {
-                refTable.addArg(arg);
+                refTable.addLocal(arg);
             }
 
-            ctx.enterScopeTo(refTable);
+
+            if (pl.getCondition() != null) {
+                arm.setCondition(pl.getCondition().accept(this));
+            }
+
             List<IrNode> body = new LinkedList<>();
             for (Node stmt : pl.getBody()) {
                 body.add(stmt.accept(this));
             }
-
-            ctx.exitScope();
 
             arm.setBody(body);
 
             pf.add(arm);
         }
 
+        ctx.exitScope();
+
         return pf;
     }
 
     public IrNode visit(PatternSplatNode psplt) throws CompileError {
         Node headNode = psplt.getHead();
-        PatternVarNode midNode = psplt.getMid();
+        PatternVlenVarNode midNode = psplt.getMid();
         Node tailNode = psplt.getTail();
 
         if (headNode instanceof PatternStructNode) {
@@ -382,8 +393,30 @@ public class AstToIrVisitor implements Visitor {
             pattern = new PatternVarBind(pvs.size());
             pvs.add(name);
         }
-        else {
+        else if (idx != vlvarIndex) {
             pattern = new PatternVarRef(idx);
+        }
+        else {
+            throw new CompileError("invalid pattern: *" + name + " already occured");
+        }
+
+        return pattern;
+    }
+
+    public IrNode visit(PatternVlenVarNode pvlvar) throws CompileError {
+        IrNode pattern;
+        String name = pvlvar.getName();
+
+        if (name.equals("_")) { throw new CompileError("invalid pattern: *_"); }
+
+        int idx = pvs.lastIndexOf(name);
+        if (idx < 0) {
+            pattern = new PatternVlenVarBind(pvs.size());
+            vlvarIndex = pvs.size();
+            pvs.add(name);
+        }
+        else {
+            throw new CompileError("invalid pattern: *" + name);
         }
 
         return pattern;

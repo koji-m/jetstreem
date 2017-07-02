@@ -834,22 +834,22 @@ PatternLambdaNode cparam():
 Node pattern():
 {
     Node p1, p3;
-    PatternVarNode p2;
+    PatternVlenVarNode p2;
 }
 {
-      LOOKAHEAD(pary() <COMMA> <OP_MULT> pvar() <COMMA>)
-      p1=pary() <COMMA> <OP_MULT> p2=pvar() <COMMA> p3=pary()
+      LOOKAHEAD(pary() <COMMA> <OP_MULT> pvlvar() <COMMA>)
+      p1=pary() <COMMA> <OP_MULT> p2=pvlvar() <COMMA> p3=pary()
         { return new PatternSplatNode(p1, p2, p3); }
     | LOOKAHEAD(pary() <COMMA>)
-      p1=pary() <COMMA> <OP_MULT> p2=pvar() 
+      p1=pary() <COMMA> <OP_MULT> p2=pvlvar() 
         { return new PatternSplatNode(p1, p2, null); }
     | p1=pary() { return p1; }
-    | LOOKAHEAD(<OP_MULT> pvar() <COMMA>)
-      <OP_MULT> p2=pvar() <COMMA> p3=pary()
+    | LOOKAHEAD(<OP_MULT> pvlvar() <COMMA>)
+      <OP_MULT> p2=pvlvar() <COMMA> p3=pary()
         { return new PatternSplatNode(null, p2, p3); }
-    | <OP_MULT> p2=pvar()
+    | <OP_MULT> p2=pvlvar()
         { return new PatternSplatNode(null, p2, null); }
-    | LOOKAHEAD(pstruct() <COMMA>) p1=pstruct() <COMMA> <OP_MULT> p2=pvar()
+    | LOOKAHEAD(pstruct() <COMMA>) p1=pstruct() <COMMA> <OP_MULT> p2=pvlvar()
         { return new PatternSplatNode(p1, p2, null); }
     | p1=pstruct() { return p1; }
 }
@@ -927,6 +927,15 @@ PatternVarNode pvar():
 {
     id=var() { return new PatternVarNode(id); }
 }
+
+PatternVlenVarNode pvlvar():
+{
+    IdentifierNode id;
+}
+{
+    id=var() { return new PatternVlenVarNode(id); }
+}
+
 
 NumberLiteralNode number():
 {

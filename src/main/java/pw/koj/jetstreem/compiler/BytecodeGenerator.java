@@ -386,15 +386,7 @@ public class BytecodeGenerator {
         ctx.discard(false);
         cb.getCond().accept(this, ctx);
 
-        mv.visitInvokeDynamicInsn(
-                "test",
-                "(Ljava/lang/Object;)Z",
-                new Handle(
-                    Opcodes.H_INVOKESTATIC,
-                    "pw/koj/jetstreem/runtime/BoolSupport",
-                    "bootstrap",
-                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
-                    false));
+        strmBool2Boolean(mv);
 
         Label l0 = new Label();
         mv.visitJumpInsn(IFEQ, l0); 
@@ -431,6 +423,18 @@ public class BytecodeGenerator {
         }
 
         ctx.discard(orgDiscard);
+    }
+
+    public void strmBool2Boolean(MethodVisitor mv) {
+        mv.visitInvokeDynamicInsn(
+                "test",
+                "(Ljava/lang/Object;)Z",
+                new Handle(
+                    Opcodes.H_INVOKESTATIC,
+                    "pw/koj/jetstreem/runtime/BoolSupport",
+                    "bootstrap",
+                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                    false));
     }
 
     public void visit(DoubleConstant dc, RuntimeContext<RuntimeScope> ctx) throws Exception {
@@ -650,6 +654,49 @@ public class BytecodeGenerator {
     }
 
     public void visit(PatternArray pa, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        boolean orgDiscard = ctx.discard();
+
+        ctx.discard(false);
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/matcher/ArrayMatcher");
+        mv.visitInsn(DUP);
+        IrNode vvar = pa.getVvar();
+        if (vvar != null) {
+            vvar.accept(this, ctx);
+            mv.visitIntInsn(BIPUSH, pa.getVvarIndex());
+        }
+        else {
+            mv.visitInsn(ACONST_NULL);
+            mv.visitIntInsn(BIPUSH, -1);
+        }
+
+        mv.visitIntInsn(BIPUSH, pa.headSize() + pa.tailSize());
+        mv.visitTypeInsn(ANEWARRAY, "pw/koj/jetstreem/runtime/matcher/PatternMatcher");
+        int mIdx = 0;
+        List<IrNode> head = pa.getHead();
+        if (head != null) {
+            for (IrNode p : head) {
+                mv.visitInsn(DUP);
+                mv.visitIntInsn(BIPUSH, mIdx);
+                p.accept(this, ctx);
+                mv.visitInsn(AASTORE);
+                mIdx++;
+            }
+        }
+        List<IrNode> tail = pa.getTail();
+        if (tail != null) {
+            for (IrNode p : tail) {
+                mv.visitInsn(DUP);
+                mv.visitIntInsn(BIPUSH, mIdx);
+                p.accept(this, ctx);
+                mv.visitInsn(AASTORE);
+                mIdx++;
+            }
+        }
+        ctx.discard(orgDiscard);
+
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/matcher/ArrayMatcher", "<init>", "(Lpw/koj/jetstreem/runtime/matcher/VarBindMatcher;I[Lpw/koj/jetstreem/runtime/matcher/PatternMatcher;)V", false);
+
+        popIfNeeded(ctx);
     }
 
     public void visit(PatternBool pb, RuntimeContext<RuntimeScope> ctx) throws Exception {
@@ -659,9 +706,178 @@ public class BytecodeGenerator {
     }
 
     public void visit(PatternFunc pf, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        boolean orgDiscard = ctx.discard();
+
+        MethodVisitor orgMv = mv;
+
+        PatternFuncRefTable refTbl = pf.getRefTable();
+        RuntimeScope scope = new RuntimeScope(refTbl);
+        ctx.push(scope);
+
+        String methodName = "lambda$define$" + nextFuncIndex();
+        StringBuilder bldr = new StringBuilder("([Ljava/lang/invoke/SwitchPoint;[Lpw/koj/jetstreem/runtime/matcher/ArrayMatcher;[Ljava/lang/Object;");
+        HashMap<String, Integer> capRefs = refTbl.getCapturedRefs();
+        int nCaptured = capRefs.size();
+        for (int i = 0; i < nCaptured; i++) {
+            bldr.append("Ljava/lang/Object;");
+        }
+        String partialDesc = bldr.toString();
+        String methodDesc = bldr.append("[Ljava/lang/Object;)Ljava/lang/Object;").toString();
+
+        mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, methodName, methodDesc, null, null);
+        mv.visitCode();
+
+        //for implicit tmp var
+        mv.visitInsn(ACONST_NULL);
+        mv.visitVarInsn(ASTORE, refTbl.tmpVarIndex());
+
+        //for args length - 1 (-1 is for subscriber)
+        mv.visitVarInsn(ALOAD, refTbl.getNCaptured());
+        mv.visitInsn(ARRAYLENGTH);
+        mv.visitInsn(ICONST_1);
+        mv.visitInsn(ISUB);
+        mv.visitVarInsn(ISTORE, refTbl.argLenIndex());
+        
+        //
+        // pfunc body generation
+        //
+        refTbl.rewindLocalRefs();
+        Label endOfFunc = new Label();
+        List<FuncArm> arms = pf.getArms();
+        for (int i = 0; i < arms.size(); i++) {
+            /*match length
+            mv.visitVarInsn(ALOAD, 1); //matchers[]
+            mv.visitIntInsn(BIPUSH, i);
+            mv.visitInsn(AALOAD);
+            mv.visitFieldInsn(GETFIELD, "pw/koj/jetstreem/runtime/matcher/ArrayMatcher", "length", "I");
+            mv.visitVarInsn(ILOAD, refTbl.argLenIndex());
+            Label nextArm = new Label();
+            mv.visitJumpInsn(IF_ICMPNE, nextArm); //TODO: if pattern has vvar test matchlen <= arglen
+            */
+
+            //match
+            mv.visitVarInsn(ALOAD, 1); 
+            mv.visitIntInsn(BIPUSH, i);
+            mv.visitInsn(AALOAD); // matchers[i]
+            mv.visitVarInsn(ALOAD, refTbl.getNCaptured()); // args[]
+            mv.visitInsn(ICONST_1); // 1
+            mv.visitVarInsn(ILOAD, refTbl.argLenIndex()); // argLen
+            mv.visitVarInsn(ALOAD, 2); // binds[]
+            mv.visitMethodInsn(INVOKEVIRTUAL, "pw/koj/jetstreem/runtime/matcher/ArrayMatcher", "match", "([Ljava/lang/Object;II[Ljava/lang/Object;)Z", false);
+            Label nextArm = new Label();
+            mv.visitJumpInsn(IFEQ, nextArm);
+
+            //guard
+            refTbl.switchLocalRefsTo(i);
+            for (int j = 0; j < refTbl.getLocalRefs().size(); j++) {
+                mv.visitVarInsn(ALOAD, 2); //for binds[]
+                mv.visitIntInsn(BIPUSH, j);
+                mv.visitInsn(AALOAD);
+                mv.visitVarInsn(ASTORE, refTbl.actualLocalVarIndexOf(j));
+            }
+
+            FuncArm arm = arms.get(i);
+            IrNode cond = arm.getCondition();
+            if (cond != null) {
+                ctx.discard(false);
+                cond.accept(this, ctx);
+                strmBool2Boolean(mv);
+                mv.visitJumpInsn(IFEQ, nextArm);
+            }
+
+            //body evaluation here
+            List<IrNode> body = arm.getBody();
+            int last = body.size() - 1;
+            for (IrNode stmt : body) {
+                if (body.indexOf(stmt) == last) {
+                    ctx.discard(false);
+                    stmt.accept(this, ctx);
+                }
+                else {
+                    ctx.discard(true);
+                    stmt.accept(this, ctx);
+                }
+            }
+            mv.visitVarInsn(ASTORE, refTbl.tmpVarIndex());
+            mv.visitJumpInsn(GOTO, endOfFunc);
+            mv.visitLabel(nextArm);
+        }
+
+        mv.visitLabel(endOfFunc);
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/SwitchPoint", "invalidateAll", "([Ljava/lang/invoke/SwitchPoint;)V", false);
+        mv.visitVarInsn(ALOAD, refTbl.tmpVarIndex());
+        mv.visitInsn(ARETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+        //
+        //end of pattern func
+        //
+
+        ctx.pop();
+
+
+        mv = orgMv;
+        // put SwitchPoint[] swps
+        mv.visitIntInsn(BIPUSH, scope.numOfSwp());
+        mv.visitTypeInsn(ANEWARRAY, "java/lang/invoke/SwitchPoint");
+        // put ArrayMatcher[] matchers
+        ctx.discard(false);
+        pf.bcGenerateMatchers(mv, ctx, this);
+        ctx.discard(orgDiscard);
+        // put Object[] binds
+        mv.visitIntInsn(BIPUSH, refTbl.maxLocalNum());
+        mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
+
+        String[] caps = new String[nCaptured];
+        for (String s : capRefs.keySet()) {
+            caps[capRefs.get(s) - 1] = s;
+        }
+        RefTable parent = refTbl.getParent();
+        for (String s : caps) {
+            RefTable r = parent.lookupRef(s);
+            if (r instanceof FuncRefTable) {
+                int lidx = ((FuncRefTable)r).localIndexOf(s);
+                mv.visitVarInsn(ALOAD, lidx);
+            }
+            else {
+                throw new CompileError("capture var compile error");
+            }
+        }
+
+
+        String lambdaDesc = partialDesc + ")Lpw/koj/jetstreem/runtime/type/StrmFunction;";
+        mv.visitInvokeDynamicInsn(
+                "call",
+                lambdaDesc,
+                new Handle(
+                    Opcodes.H_INVOKESTATIC,
+                    "java/lang/invoke/LambdaMetafactory",
+                    "metafactory",
+                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                    false),
+                new Object[]{
+                    Type.getType("([Ljava/lang/Object;)Ljava/lang/Object;"),
+                    new Handle(
+                            Opcodes.H_INVOKESTATIC,
+                            className(),
+                            methodName,
+                            methodDesc,
+                            false),
+                    Type.getType("([Ljava/lang/Object;)Ljava/lang/Object;")});
+
+
+        popIfNeeded(ctx);
+
     }
 
     public void visit(PatternInteger pi, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/matcher/IntegerMatcher");
+        mv.visitInsn(DUP);
+        mv.visitLdcInsn(new Long(pi.getValue()));
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/matcher/IntegerMatcher", "<init>", "(J)V", false);
+
+        popIfNeeded(ctx);
     }
 
     public void visit(PatternNamespace pn, RuntimeContext<RuntimeScope> ctx) throws Exception {
@@ -677,9 +893,24 @@ public class BytecodeGenerator {
     }
 
     public void visit(PatternVarBind pv, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/matcher/VarBindMatcher");
+        mv.visitInsn(DUP);
+        mv.visitLdcInsn(new Integer(pv.getIndex()));
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/matcher/VarBindMatcher", "<init>", "(I)V", false);
+
+        popIfNeeded(ctx);
     }
 
     public void visit(PatternVarRef pv, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        mv.visitTypeInsn(NEW, "pw/koj/jetstreem/runtime/matcher/VarRefMatcher");
+        mv.visitInsn(DUP);
+        mv.visitLdcInsn(new Integer(pv.getIndex()));
+        mv.visitMethodInsn(INVOKESPECIAL, "pw/koj/jetstreem/runtime/matcher/VarRefMatcher", "<init>", "(I)V", false);
+
+        popIfNeeded(ctx);
+    }
+
+    public void visit(PatternVlenVarBind pv, RuntimeContext<RuntimeScope> ctx) throws Exception {
     }
 
     public void visit(RuntimeContext<RuntimeScope> ctx) throws Exception {

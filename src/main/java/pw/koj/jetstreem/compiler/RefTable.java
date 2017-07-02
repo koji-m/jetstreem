@@ -16,7 +16,7 @@ abstract public class RefTable {
         localRefs = new HashMap<>();
         capturedRefs = new HashMap<>();
         nLocals = 1; //0 for implicit tmp var
-        nCaptured = 1; //0 for SwitchPoint[]
+        nCaptured = 1; //0 for SwitchPoint[] 
         parent = null;
     }
 

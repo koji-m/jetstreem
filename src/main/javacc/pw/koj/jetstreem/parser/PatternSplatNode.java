@@ -5,11 +5,11 @@ import pw.koj.jetstreem.compiler.ir.*;
 
 public class PatternSplatNode extends Node {
     protected Node head, tail;
-    protected PatternVarNode mid;
+    protected PatternVlenVarNode mid;
 
     public PatternSplatNode() {}
 
-    public PatternSplatNode(Node head, PatternVarNode mid, Node tail) {
+    public PatternSplatNode(Node head, PatternVlenVarNode mid, Node tail) {
         this.head = head;
         this.mid = mid;
         this.tail = tail;
@@ -23,11 +23,11 @@ public class PatternSplatNode extends Node {
         this.head = head;
     }
 
-    public PatternVarNode getMid() {
+    public PatternVlenVarNode getMid() {
         return mid;
     }
 
-    public void setMid(PatternVarNode mid) {
+    public void setMid(PatternVlenVarNode mid) {
         this.mid = mid;
     }
 
