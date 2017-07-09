@@ -1,4 +1,5 @@
 import generator.StrmMapOperatorGenerator
+import generator.StrmEachOperatorGenerator
 
 plugins {
   id 'java'
@@ -30,6 +31,7 @@ task genBuiltin {
   doLast {
     file("$buildDir/classes/main/pw/koj/jetstreem/runtime/type").mkdirs()
     new StrmMapOperatorGenerator().generate("$buildDir/classes/main/pw/koj/jetstreem/runtime/type/")
+    new StrmEachOperatorGenerator().generate("$buildDir/classes/main/pw/koj/jetstreem/runtime/type/")
   }
 }
 

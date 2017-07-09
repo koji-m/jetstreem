@@ -4,14 +4,16 @@ import java.util.LinkedList;
 
 public class RuntimeContext<T> extends LinkedList<T> {
     private boolean discardp;
+    private boolean topbinopp;
 
     public RuntimeContext() {
-        this(true);
+        this(true, true);
     }
 
-    public RuntimeContext(boolean discardp) {
+    public RuntimeContext(boolean discardp, boolean topbinopp) {
         super();
         this.discardp = discardp;
+        this.topbinopp = topbinopp;
     }
 
     public boolean discard() {
@@ -20,6 +22,14 @@ public class RuntimeContext<T> extends LinkedList<T> {
 
     public void discard(boolean discardp) {
         this.discardp = discardp;
+    }
+
+    public boolean topBinOp() {
+        return topbinopp;
+    }
+
+    public void topBinOp(boolean topbinopp) {
+        this.topbinopp = topbinopp;
     }
 
 }

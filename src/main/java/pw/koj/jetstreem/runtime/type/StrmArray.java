@@ -26,6 +26,11 @@ public class StrmArray implements StrmProducer {
             .add(Flowable.fromArray(array).subscribeWith(rhs.subscriber()));
     }
 
+    public Disposable opSubscribe(StrmConsumer rhs) {
+        return StrmNamespace.strmEnv()
+            .add(Flowable.fromArray(array).subscribeWith(rhs.subscriber()));
+    }
+
     public Object[] vals() {
         return array;
     }

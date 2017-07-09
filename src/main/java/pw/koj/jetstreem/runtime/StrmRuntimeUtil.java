@@ -13,5 +13,9 @@ public class StrmRuntimeUtil {
     public static Disposable opBar(Flowable<Object> flowable, StrmConsumer consumer) {
         return StrmNamespace.strmEnv().add(flowable.subscribeWith(consumer.subscriber()));
     }
+
+    public static Disposable opSubscribe(Flowable<Object> flowable, StrmConsumer consumer) {
+        return StrmNamespace.strmEnv().add(flowable.subscribeWith(consumer.subscriber()));
+    }
 }
 

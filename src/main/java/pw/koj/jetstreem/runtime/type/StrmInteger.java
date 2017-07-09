@@ -15,6 +15,10 @@ public class StrmInteger {
         return value;
     }
 
+    public int intValue() {
+        return (int)value;
+    }
+
     public double doubleValue() {
         return (double)value;
     }

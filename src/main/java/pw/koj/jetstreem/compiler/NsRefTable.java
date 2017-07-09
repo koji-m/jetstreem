@@ -62,5 +62,8 @@ public class NsRefTable extends RefTable {
         mv.visitFieldInsn(GETSTATIC, fullName(), refName, "Ljava/lang/Object;");
     }
 
+    public void bcPushEmitterRef(MethodVisitor mv) throws CompileError {
+        throw new CompileError("invalid emit in namespace");
+    }
 }
 

@@ -176,5 +176,10 @@ public class PatternFuncRefTable extends RefTable {
         }
     }
 
+    public void bcPushEmitterRef(MethodVisitor mv) throws CompileError {
+        mv.visitVarInsn(ALOAD, nCaptured);
+        mv.visitIntInsn(BIPUSH, 0);
+        mv.visitInsn(AALOAD);
+    }
 }
 

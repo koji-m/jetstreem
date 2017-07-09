@@ -301,28 +301,45 @@ public class BytecodeGenerator {
 
     public void visit(BinaryOp binOp, RuntimeContext<RuntimeScope> ctx) throws Exception {
         boolean orgDiscard = ctx.discard();
+        boolean orgTopBinOp = ctx.topBinOp();
 
         RuntimeScope scope = ctx.peek();
 
         mv.visitVarInsn(ALOAD, 0);
 
         ctx.discard(false);
+        ctx.topBinOp(false);
         binOp.getLhs().accept(this, ctx);
 
         ctx.discard(false);
+        ctx.topBinOp(false);
         binOp.getRhs().accept(this, ctx);
 
         ctx.discard(orgDiscard);
+        ctx.topBinOp(orgTopBinOp);
 
-        mv.visitInvokeDynamicInsn(
-                binOp.getOp(),
-                "([Ljava/lang/invoke/SwitchPoint;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-                new Handle(Opcodes.H_INVOKESTATIC,
-                    "pw/koj/jetstreem/runtime/OpSupport",
-                    "bootstrap",
-                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/Integer;)Ljava/lang/invoke/CallSite;",
-                    false),
-                new Object[]{new Integer(scope.nextIndex())});
+        if (binOp.getOp().equals("opBar") && ctx.topBinOp()) {
+            mv.visitInvokeDynamicInsn(
+                    "opSubscribe",
+                    "([Ljava/lang/invoke/SwitchPoint;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                    new Handle(Opcodes.H_INVOKESTATIC,
+                        "pw/koj/jetstreem/runtime/OpSupport",
+                        "bootstrap",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/Integer;)Ljava/lang/invoke/CallSite;",
+                        false),
+                    new Object[]{new Integer(scope.nextIndex())});
+        }
+        else {
+            mv.visitInvokeDynamicInsn(
+                    binOp.getOp(),
+                    "([Ljava/lang/invoke/SwitchPoint;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                    new Handle(Opcodes.H_INVOKESTATIC,
+                        "pw/koj/jetstreem/runtime/OpSupport",
+                        "bootstrap",
+                        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/Integer;)Ljava/lang/invoke/CallSite;",
+                        false),
+                    new Object[]{new Integer(scope.nextIndex())});
+        }
 
         popIfNeeded(ctx);
     }
@@ -447,6 +464,20 @@ public class BytecodeGenerator {
     }
 
     public void visit(Emit em, RuntimeContext<RuntimeScope> ctx) throws Exception {
+        boolean orgDiscard = ctx.discard();
+        RefTable refTbl = ctx.peek().refTable();
+
+        for (IrNode arg : em.getArgs()) {
+            refTbl.bcPushEmitterRef(mv);
+            ctx.discard(false);
+            arg.accept(this, ctx);
+            mv.visitMethodInsn(INVOKEINTERFACE, "org/reactivestreams/Subscriber", "onNext", "(Ljava/lang/Object;)V", true);
+        }
+        ctx.discard(orgDiscard);
+
+        mv.visitFieldInsn(GETSTATIC, "pw/koj/jetstreem/runtime/BuiltIn", "nil", "Ljava/lang/Object;");
+
+        popIfNeeded(ctx);
     }
 
     public void visit(FunCall fc, RuntimeContext<RuntimeScope> ctx) throws Exception {

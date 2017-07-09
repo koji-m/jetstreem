@@ -100,5 +100,7 @@ abstract public class RefTable {
 
     abstract public void bcPushVarRef(String refName, MethodVisitor mv) throws CompileError;
 
+    abstract public void bcPushEmitterRef(MethodVisitor mv) throws CompileError;
+
 }
 

@@ -12,7 +12,9 @@ public class BuiltIn extends StrmNamespace {
     public static Object stdout;
     public static Object stdin;
     public static Object map;
+    public static Object each;
     public static Object seq;
+    public static Object tcp_server;
 
     static {
         nil = new StrmNil();
@@ -43,6 +45,16 @@ public class BuiltIn extends StrmNamespace {
         
         map = mapFunc;
 
+        StrmFunction eachFunc = (Object[] args) -> {
+            Object arg = args[1];
+            if (arg instanceof StrmFunction) {
+                return new StrmEachOperator((StrmFunction)arg);
+            }
+            return nil;
+        };
+        
+        each = eachFunc;
+
         StrmFunction seqFunc = (Object[] args) -> {
             Object arg = args[1];
             if (arg instanceof StrmInteger) {
@@ -54,6 +66,20 @@ public class BuiltIn extends StrmNamespace {
         };
 
         seq = seqFunc;
+
+        StrmFunction tcpServerFunc = (Object[] args) -> {
+            if (args.length == 2) {
+                Object arg = args[1];
+                if (arg instanceof StrmInteger) {
+                    return Flowable.create(new StrmTcpServer((StrmInteger)arg),
+                                           BackpressureStrategy.BUFFER)
+                                   .subscribeOn(Schedulers.io());
+                }
+            }
+            return nil;
+        };
+        tcp_server = tcpServerFunc;
+
     }
 
     public BuiltIn(Object[] array) {

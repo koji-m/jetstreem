@@ -14,6 +14,7 @@ public class OpSupport {
     private static final MethodHandle UNARY_OP;
     private static final MethodHandle BINARY_OP1;
     private static final MethodHandle BINARY_OP2;
+    private static final MethodHandle BINARY_OP3;
 
     static {
         try {
@@ -32,6 +33,11 @@ public class OpSupport {
             BINARY_OP2 = lookup.findStatic(
                 OpSupport.class,
                 "binaryOp2",
+                methodType(Object.class, StrmCallSite.class, String.class, Integer.class, SwitchPoint[].class, Object.class, Object.class));
+
+            BINARY_OP3 = lookup.findStatic(
+                OpSupport.class,
+                "binaryOp3",
                 methodType(Object.class, StrmCallSite.class, String.class, Integer.class, SwitchPoint[].class, Object.class, Object.class));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("method handle initialization failed");
@@ -59,8 +65,14 @@ public class OpSupport {
                                            .bindTo(idx)
                                            .asType(type);
             }
-            else {
+            else if (name.equals("opSubscribe")) {
                 fallbackHandle = BINARY_OP2.bindTo(callSite)
+                                           .bindTo(name)
+                                           .bindTo(idx)
+                                           .asType(type);
+            }
+            else {
+                fallbackHandle = BINARY_OP3.bindTo(callSite)
                                            .bindTo(name)
                                            .bindTo(idx)
                                            .asType(type);
@@ -168,6 +180,39 @@ public class OpSupport {
     }
 
     public static Object binaryOp2(StrmCallSite callSite, String name, Integer idx, SwitchPoint[] swps, Object lhs, Object rhs) throws Throwable {
+        MethodHandle mh = null;
+
+        MethodType type = MethodType.methodType(Object.class, Object.class);
+
+        if (rhs instanceof StrmConsumer) {
+            if (lhs instanceof StrmProducer) {
+                mh = callSite.lookup.findVirtual(
+                        lhs.getClass(),
+                        name,
+                        MethodType.methodType(Disposable.class, StrmConsumer.class));
+            }
+            else if (lhs instanceof Flowable) {
+                mh = callSite.lookup.findStatic(
+                        StrmRuntimeUtil.class,
+                        name,
+                        MethodType.methodType(Disposable.class, Flowable.class, StrmConsumer.class));
+            }
+        }
+
+        if (mh == null)  {
+            throw new RuntimeException("binary operation error");
+        }
+
+        mh = MethodHandles.dropArguments(mh, 0, SwitchPoint[].class);
+        mh = mh.asType(callSite.type());
+        SwitchPoint swp = new SwitchPoint();
+        swps[idx.intValue()] = swp;
+        mh = swp.guardWithTest(mh, callSite.fallback);
+        callSite.setTarget(mh);
+        return mh.invokeExact(swps, lhs, rhs);
+    }
+
+    public static Object binaryOp3(StrmCallSite callSite, String name, Integer idx, SwitchPoint[] swps, Object lhs, Object rhs) throws Throwable {
         MethodHandle mh = null;
 
         MethodType type = MethodType.methodType(Object.class, Object.class);
