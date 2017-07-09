@@ -1,6 +1,7 @@
 package pw.koj.jetstreem.runtime;
 
 import java.io.*;
+import java.net.Socket;
 import io.reactivex.*;
 import io.reactivex.schedulers.Schedulers;
 import pw.koj.jetstreem.runtime.type.*;
@@ -15,6 +16,7 @@ public class BuiltIn extends StrmNamespace {
     public static Object each;
     public static Object seq;
     public static Object tcp_server;
+    public static Object tcp_socket;
 
     static {
         nil = new StrmNil();
@@ -79,6 +81,25 @@ public class BuiltIn extends StrmNamespace {
             return nil;
         };
         tcp_server = tcpServerFunc;
+
+        StrmFunction tcpSocketFunc = (Object[] args) -> {
+            if (args.length == 3) {
+                Object host = args[1];
+                Object port = args[2];
+                if (host instanceof StrmString && port instanceof StrmInteger) {
+                    try {
+                        return new StrmSocket(
+                                new Socket(
+                                    ((StrmString)host).stringValue(),
+                                    ((StrmInteger)port).intValue()));
+                    }
+                    catch (Exception e) {}
+                }
+            }
+            return nil;
+        };
+        tcp_socket = tcpSocketFunc;
+
 
     }
 
