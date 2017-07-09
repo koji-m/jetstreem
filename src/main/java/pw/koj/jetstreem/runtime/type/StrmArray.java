@@ -17,16 +17,16 @@ public class StrmArray implements StrmProducer {
         this.headers = headers;
     }
 
-    public Flowable opBar(StrmFilter rhs) {
+    public Flowable opBar(StrmFilter rhs) throws Exception {
         return rhs.hangOn(Flowable.fromArray(array));
     }
 
-    public Disposable opBar(StrmConsumer rhs) {
+    public Disposable opBar(StrmConsumer rhs) throws Exception {
         return StrmNamespace.strmEnv()
             .add(Flowable.fromArray(array).subscribeWith(rhs.subscriber()));
     }
 
-    public Disposable opSubscribe(StrmConsumer rhs) {
+    public Disposable opSubscribe(StrmConsumer rhs) throws Exception {
         return StrmNamespace.strmEnv()
             .add(Flowable.fromArray(array).subscribeWith(rhs.subscriber()));
     }
