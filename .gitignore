@@ -6,4 +6,5 @@
 .gradle
 buildSrc/build/
 build/
+src/main/java/draft/
 
